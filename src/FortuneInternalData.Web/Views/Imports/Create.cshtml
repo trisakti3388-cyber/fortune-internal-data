@@ -1,8 +1,36 @@
-<div class="card">
-    <h2>Upload Phone Data File</h2>
-    <p class="muted">Supported formats: CSV and XLSX. Required column: phone_number. Optional: seq, remark.</p>
-    <form>
-        <input type="file" />
-        <button type="submit">Upload and Validate</button>
-    </form>
+@model FortuneInternalData.Web.ViewModels.UploadImportViewModel
+@{
+    ViewData["Title"] = "Upload Import";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card stat-card">
+            <div class="card-header bg-white">
+                <h4 class="mb-0"><i class="bi bi-cloud-upload"></i> Upload Phone Data File</h4>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <strong>Supported formats:</strong> CSV and XLSX<br />
+                    <strong>Required column:</strong> <code>phone_number</code><br />
+                    <strong>Optional columns:</strong> <code>seq</code>, <code>remark</code>
+                </div>
+
+                <form method="post" asp-action="Create" enctype="multipart/form-data">
+                    <div asp-validation-summary="All" class="alert alert-danger" style="display: @(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="File" class="form-label">Choose File</label>
+                        <input asp-for="File" class="form-control form-control-lg" type="file" accept=".csv,.xlsx" />
+                        <span asp-validation-for="File" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-upload"></i> Upload and Validate
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>

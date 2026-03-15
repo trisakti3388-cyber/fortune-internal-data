@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using FortuneInternalData.Application.DTOs;
 using FortuneInternalData.Application.Interfaces;
+using FortuneInternalData.Domain.Constants;
 using FortuneInternalData.Web.Security;
 using FortuneInternalData.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FortuneInternalData.Web.Controllers;
 
-[Authorize(Policy = PolicyNames.StaffOrAbove)]
+[Authorize]
 public class PhoneNumbersController : Controller
 {
     private readonly IPhoneNumberService _phoneNumberService;
@@ -20,6 +22,9 @@ public class PhoneNumbersController : Controller
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] PhoneNumberListViewModel filter, CancellationToken cancellationToken)
     {
+        if (filter.Page < 1) filter.Page = 1;
+        if (filter.PageSize < 1) filter.PageSize = 20;
+
         filter.Result = await _phoneNumberService.SearchAsync(
             filter.SearchPhoneNumber,
             filter.Status,
@@ -31,11 +36,40 @@ public class PhoneNumbersController : Controller
         return View(filter);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Update(PhoneNumberUpdateDto request, CancellationToken cancellationToken)
+    [HttpGet]
+    public async Task<IActionResult> Edit(ulong id, CancellationToken cancellationToken)
     {
-        // TODO: Replace demo user id with authenticated user claim parsing.
-        await _phoneNumberService.UpdateAsync(request, userId: 1, cancellationToken);
+        var item = await _phoneNumberService.GetByIdAsync(id, cancellationToken);
+        if (item == null) return NotFound();
+
+        return View(new PhoneNumberEditViewModel
+        {
+            Id = item.Id,
+            PhoneNumber = item.PhoneNumber,
+            Status = item.Status,
+            WhatsappStatus = item.WhatsappStatus,
+            Remark = item.Remark
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(PhoneNumberEditViewModel model, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+
+        await _phoneNumberService.UpdateAsync(new PhoneNumberUpdateDto
+        {
+            Id = model.Id,
+            Status = model.Status,
+            WhatsappStatus = model.WhatsappStatus,
+            Remark = model.Remark
+        }, userId, cancellationToken);
+
+        TempData["SuccessMessage"] = "Phone number record updated successfully.";
         return RedirectToAction(nameof(Index));
     }
 }

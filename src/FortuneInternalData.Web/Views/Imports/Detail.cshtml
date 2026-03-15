@@ -1,65 +1,125 @@
 @model FortuneInternalData.Web.ViewModels.ImportBatchDetailViewModel
+@{
+    ViewData["Title"] = "Import Batch Detail";
+}
 
 @if (Model.Batch is null)
 {
-    <div class="card"><p class="muted">Import batch not found.</p></div>
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Import batch not found.</div>
 }
 else
 {
-    <div class="card">
-        <h2>Import Batch Detail</h2>
-        <p><strong>Batch ID:</strong> @Model.Batch.BatchId</p>
-        <p><strong>File Name:</strong> @Model.Batch.FileName</p>
-        <p><strong>Uploaded By:</strong> @Model.Batch.UploadedByName</p>
-        <p><strong>Status:</strong> @Model.Batch.Status</p>
-        <p><strong>Created At:</strong> @Model.Batch.CreatedAt</p>
-        <form method="post" action="/Imports/Confirm">
-            <input type="hidden" name="batchId" value="@Model.Batch.BatchId" />
-            <button type="submit">Confirm Import</button>
-        </form>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-text"></i> Import Batch #@Model.Batch.BatchId</h2>
+        <a href="/Imports" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to History</a>
     </div>
 
-    <div class="card">
-        <h3>Summary</h3>
-        <ul>
-            <li>Total Rows: @Model.Batch.Summary.TotalRows</li>
-            <li>New Rows: @Model.Batch.Summary.NewRows</li>
-            <li>Existing Rows: @Model.Batch.Summary.ExistingRows</li>
-            <li>Invalid Rows: @Model.Batch.Summary.InvalidRows</li>
-            <li>Duplicate Rows: @Model.Batch.Summary.DuplicateRows</li>
-        </ul>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Seq</th>
-                <th>Raw Phone</th>
-                <th>Normalized</th>
-                <th>Remark</th>
-                <th>Status</th>
-                <th>Message</th>
-            </tr>
-        </thead>
-        <tbody>
-        @if (Model.Batch.Rows.Any())
-        {
-            foreach (var row in Model.Batch.Rows)
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>File Name:</strong> @Model.Batch.FileName</p>
+                            <p><strong>Uploaded By:</strong> @Model.Batch.UploadedByName</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> <span class="badge badge-@Model.Batch.Status fs-6">@Model.Batch.Status</span></p>
+                            <p><strong>Created:</strong> @Model.Batch.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            @if (Model.Batch.Status == "pending" && (User.IsInRole("Superadmin") || User.IsInRole("Admin")))
             {
-                <tr>
-                    <td>@row.Seq</td>
-                    <td>@row.RawPhoneNumber</td>
-                    <td>@row.NormalizedPhoneNumber</td>
-                    <td>@row.Remark</td>
-                    <td>@row.RowStatus</td>
-                    <td>@row.Message</td>
-                </tr>
+                <div class="card stat-card border-success">
+                    <div class="card-body">
+                        <p class="mb-2"><strong>@Model.Batch.Summary.NewRows</strong> new records ready to import.</p>
+                        <form method="post" action="/Imports/Confirm/@Model.Batch.BatchId" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Batch.BatchId" />
+                            <button type="submit" class="btn btn-success w-100 mb-2" onclick="return confirm('Confirm import of @Model.Batch.Summary.NewRows new records?')">
+                                <i class="bi bi-check-circle"></i> Confirm Import
+                            </button>
+                        </form>
+                        <form method="post" action="/Imports/Cancel/@Model.Batch.BatchId" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Batch.BatchId" />
+                            <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Cancel this import batch?')">
+                                <i class="bi bi-x-circle"></i> Cancel Import
+                            </button>
+                        </form>
+                    </div>
+                </div>
             }
-        }
-        else
-        {
-            <tr><td colspan="6" class="muted">No row detail found.</td></tr>
-        }
-        </tbody>
-    </table>
+        </div>
+    </div>
+
+    <div class="card stat-card mb-4">
+        <div class="card-header bg-white"><h5 class="mb-0">Summary</h5></div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col">
+                    <div class="fw-bold fs-4">@Model.Batch.Summary.TotalRows</div>
+                    <div class="text-muted small">Total</div>
+                </div>
+                <div class="col">
+                    <div class="fw-bold fs-4 text-success">@Model.Batch.Summary.NewRows</div>
+                    <div class="text-muted small">New</div>
+                </div>
+                <div class="col">
+                    <div class="fw-bold fs-4 text-warning">@Model.Batch.Summary.ExistingRows</div>
+                    <div class="text-muted small">Existing</div>
+                </div>
+                <div class="col">
+                    <div class="fw-bold fs-4 text-danger">@Model.Batch.Summary.InvalidRows</div>
+                    <div class="text-muted small">Invalid</div>
+                </div>
+                <div class="col">
+                    <div class="fw-bold fs-4 text-purple">@Model.Batch.Summary.DuplicateRows</div>
+                    <div class="text-muted small">Duplicate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="card-header bg-white"><h5 class="mb-0">Row Details</h5></div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Seq</th>
+                        <th>Raw Phone</th>
+                        <th>Normalized</th>
+                        <th>Remark</th>
+                        <th>Status</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Batch.Rows.Any())
+                    {
+                        foreach (var row in Model.Batch.Rows)
+                        {
+                            <tr class="@(row.RowStatus == "new" ? "table-success" : row.RowStatus == "invalid" ? "table-danger" : row.RowStatus == "existing" ? "table-warning" : "table-secondary")">
+                                <td>@row.Seq</td>
+                                <td><code>@row.RawPhoneNumber</code></td>
+                                <td><code>@row.NormalizedPhoneNumber</code></td>
+                                <td>@row.Remark</td>
+                                <td><span class="badge badge-@row.RowStatus">@row.RowStatus</span></td>
+                                <td class="small">@row.Message</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">No row details found.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 }

@@ -1,42 +1,75 @@
 using FortuneInternalData.Application.Interfaces;
 using FortuneInternalData.Domain.Constants;
 using FortuneInternalData.Domain.Entities;
+using FortuneInternalData.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace FortuneInternalData.Infrastructure.Services;
 
 public class ImportService : IImportService
 {
-    private readonly IImportFileParser _importFileParser;
+    private readonly ImportFileParserFactory _parserFactory;
     private readonly IPhoneNumberValidationService _phoneNumberValidationService;
-    private readonly IImportBatchRepository _importBatchRepository;
-    private readonly IImportBatchRowRepository _importBatchRowRepository;
-    private readonly IPhoneNumberRepository _phoneNumberRepository;
-    private readonly IActivityLogRepository _activityLogRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ApplicationDbContext _dbContext;
 
     public ImportService(
-        IImportFileParser importFileParser,
+        ImportFileParserFactory parserFactory,
         IPhoneNumberValidationService phoneNumberValidationService,
-        IImportBatchRepository importBatchRepository,
-        IImportBatchRowRepository importBatchRowRepository,
-        IPhoneNumberRepository phoneNumberRepository,
-        IActivityLogRepository activityLogRepository,
-        IUnitOfWork unitOfWork)
+        ApplicationDbContext dbContext)
     {
-        _importFileParser = importFileParser;
+        _parserFactory = parserFactory;
         _phoneNumberValidationService = phoneNumberValidationService;
-        _importBatchRepository = importBatchRepository;
-        _importBatchRowRepository = importBatchRowRepository;
-        _phoneNumberRepository = phoneNumberRepository;
-        _activityLogRepository = activityLogRepository;
-        _unitOfWork = unitOfWork;
+        _dbContext = dbContext;
     }
 
-    public async Task ValidateUploadAsync(string storedFilePath, CancellationToken cancellationToken = default)
+    public async Task<ulong> ValidateAndCreateBatchAsync(string storedFilePath, string originalFileName, string uploadedByUserId, CancellationToken cancellationToken = default)
     {
-        var parsedRows = await _importFileParser.ParseAsync(storedFilePath, cancellationToken);
+        var parser = _parserFactory.GetParser(storedFilePath);
+        var parsedRows = await parser.ParseAsync(storedFilePath, cancellationToken);
+
+        // Create the batch record first
+        var batch = new ImportBatch
+        {
+            FileName = originalFileName,
+            StoredFilePath = storedFilePath,
+            UploadedByUserId = uploadedByUserId,
+            TotalRows = parsedRows.Count,
+            Status = "pending",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.ImportBatches.Add(batch);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Validate rows
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var batchRows = new List<ImportBatchRow>();
+
+        // Batch query existing phone numbers for performance
+        var allNormalized = parsedRows
+            .Select(r => _phoneNumberValidationService.Normalize(r.PhoneNumber))
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Distinct()
+            .ToList();
+
+        var existingPhones = new HashSet<string>(StringComparer.Ordinal);
+        if (allNormalized.Count > 0)
+        {
+            // Query in batches of 500
+            for (int i = 0; i < allNormalized.Count; i += 500)
+            {
+                var chunk = allNormalized.Skip(i).Take(500).ToList();
+                var found = await _dbContext.PhoneNumbers
+                    .Where(p => chunk.Contains(p.PhoneNumber))
+                    .Select(p => p.PhoneNumber)
+                    .ToListAsync(cancellationToken);
+                foreach (var f in found)
+                    existingPhones.Add(f);
+            }
+        }
+
+        int newCount = 0, existingCount = 0, invalidCount = 0, duplicateCount = 0;
 
         foreach (var row in parsedRows)
         {
@@ -48,20 +81,28 @@ public class ImportService : IImportService
             {
                 status = ImportRowStatuses.Invalid;
                 message = "Phone number must be 10-14 digits only.";
+                invalidCount++;
             }
             else if (!seen.Add(normalized))
             {
                 status = ImportRowStatuses.DuplicateFile;
                 message = "Duplicate phone number in uploaded file.";
+                duplicateCount++;
             }
-            else if (await _phoneNumberRepository.ExistsAsync(normalized, cancellationToken))
+            else if (existingPhones.Contains(normalized))
             {
                 status = ImportRowStatuses.Existing;
-                message = "Phone number already exists.";
+                message = "Phone number already exists in system.";
+                existingCount++;
+            }
+            else
+            {
+                newCount++;
             }
 
             batchRows.Add(new ImportBatchRow
             {
+                BatchId = batch.Id,
                 Seq = row.Seq,
                 RawPhoneNumber = row.PhoneNumber,
                 NormalizedPhoneNumber = normalized,
@@ -73,17 +114,32 @@ public class ImportService : IImportService
             });
         }
 
-        // TODO: Link rows to a persisted import batch created before validation.
-        await _importBatchRowRepository.AddRangeAsync(batchRows, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        // Update batch counts
+        batch.NewRows = newCount;
+        batch.ExistingRows = existingCount;
+        batch.InvalidRows = invalidCount;
+        batch.DuplicateRows = duplicateCount;
+        batch.UpdatedAt = DateTime.UtcNow;
+
+        await _dbContext.ImportBatchRows.AddRangeAsync(batchRows, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return batch.Id;
     }
 
-    public async Task ConfirmImportAsync(ulong batchId, ulong userId, CancellationToken cancellationToken = default)
+    public async Task ConfirmImportAsync(ulong batchId, string userId, CancellationToken cancellationToken = default)
     {
-        var batch = await _importBatchRepository.GetByIdAsync(batchId, cancellationToken)
+        var batch = await _dbContext.ImportBatches.FirstOrDefaultAsync(b => b.Id == batchId, cancellationToken)
             ?? throw new InvalidOperationException("Import batch not found.");
 
-        var newRows = await _importBatchRowRepository.GetNewRowsAsync(batchId, cancellationToken);
+        if (batch.Status != "pending")
+            throw new InvalidOperationException($"Import batch is in '{batch.Status}' status and cannot be confirmed.");
+
+        var newRows = await _dbContext.ImportBatchRows
+            .Where(x => x.BatchId == batchId && x.RowStatus == ImportRowStatuses.New)
+            .OrderBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+
         var entities = newRows.Select(x => new PhoneNumberRecord
         {
             Seq = x.Seq,
@@ -96,23 +152,44 @@ public class ImportService : IImportService
             UpdatedAt = DateTime.UtcNow
         }).ToList();
 
-        await _phoneNumberRepository.AddRangeAsync(entities, cancellationToken);
+        await _dbContext.PhoneNumbers.AddRangeAsync(entities, cancellationToken);
 
         batch.Status = "confirmed";
         batch.UpdatedAt = DateTime.UtcNow;
-        await _importBatchRepository.UpdateAsync(batch, cancellationToken);
 
-        await _activityLogRepository.AddAsync(new ActivityLog
+        _dbContext.ActivityLogs.Add(new ActivityLog
         {
             UserId = userId,
             Action = "confirm_import",
             TargetType = "import_batches",
             TargetId = batch.Id,
             NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ImportedCount = entities.Count }),
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        }, cancellationToken);
+            CreatedAt = DateTime.UtcNow
+        });
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task CancelImportAsync(ulong batchId, string userId, CancellationToken cancellationToken = default)
+    {
+        var batch = await _dbContext.ImportBatches.FirstOrDefaultAsync(b => b.Id == batchId, cancellationToken)
+            ?? throw new InvalidOperationException("Import batch not found.");
+
+        if (batch.Status != "pending")
+            throw new InvalidOperationException($"Import batch is in '{batch.Status}' status and cannot be cancelled.");
+
+        batch.Status = "cancelled";
+        batch.UpdatedAt = DateTime.UtcNow;
+
+        _dbContext.ActivityLogs.Add(new ActivityLog
+        {
+            UserId = userId,
+            Action = "cancel_import",
+            TargetType = "import_batches",
+            TargetId = batch.Id,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

@@ -1,48 +1,63 @@
 @model FortuneInternalData.Web.ViewModels.ImportHistoryViewModel
+@{
+    ViewData["Title"] = "Import History";
+}
 
-<div class="card">
-    <h2>Import History</h2>
-    <p class="muted">Review uploaded files and validation results.</p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-clock-history"></i> Import History</h2>
+    @if (User.IsInRole("Superadmin") || User.IsInRole("Admin"))
+    {
+        <a href="/Imports/Create" class="btn btn-primary"><i class="bi bi-upload"></i> Upload New File</a>
+    }
 </div>
-<table>
-    <thead>
-        <tr>
-            <th>Batch ID</th>
-            <th>File Name</th>
-            <th>Uploaded By</th>
-            <th>Status</th>
-            <th>Total</th>
-            <th>New</th>
-            <th>Existing</th>
-            <th>Invalid</th>
-            <th>Duplicate</th>
-            <th>Created</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-    @if (Model.Items.Any())
-    {
-        foreach (var item in Model.Items)
-        {
-            <tr>
-                <td>@item.Id</td>
-                <td>@item.FileName</td>
-                <td>@item.UploadedByName</td>
-                <td>@item.Status</td>
-                <td>@item.TotalRows</td>
-                <td>@item.NewRows</td>
-                <td>@item.ExistingRows</td>
-                <td>@item.InvalidRows</td>
-                <td>@item.DuplicateRows</td>
-                <td>@item.CreatedAt</td>
-                <td><a class="btn" href="/Imports/Detail?batchId=@item.Id">Detail</a></td>
-            </tr>
-        }
-    }
-    else
-    {
-        <tr><td colspan="11" class="muted">No import history found.</td></tr>
-    }
-    </tbody>
-</table>
+
+<div class="card stat-card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>File Name</th>
+                    <th>Uploaded By</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>New</th>
+                    <th>Existing</th>
+                    <th>Invalid</th>
+                    <th>Duplicate</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items.Any())
+                {
+                    foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.FileName</td>
+                            <td>@item.UploadedByName</td>
+                            <td><span class="badge badge-@item.Status">@item.Status</span></td>
+                            <td>@item.TotalRows</td>
+                            <td><span class="text-success fw-bold">@item.NewRows</span></td>
+                            <td><span class="text-warning">@item.ExistingRows</span></td>
+                            <td><span class="text-danger">@item.InvalidRows</span></td>
+                            <td><span class="text-purple">@item.DuplicateRows</span></td>
+                            <td class="text-muted small">@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>
+                                <a href="/Imports/Detail/@item.Id" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i> Detail
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="11" class="text-center text-muted py-4">No import history found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

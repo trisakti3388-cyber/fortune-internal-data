@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using FortuneInternalData.Application.Interfaces;
 using FortuneInternalData.Web.Security;
 using FortuneInternalData.Web.ViewModels;
@@ -43,6 +44,7 @@ public class ImportsController : Controller
 
     [Authorize(Policy = PolicyNames.AdminOrAbove)]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(UploadImportViewModel model, CancellationToken cancellationToken)
     {
         if (model.File is null || model.File.Length == 0)
@@ -51,28 +53,53 @@ public class ImportsController : Controller
             return View(model);
         }
 
+        var ext = Path.GetExtension(model.File.FileName).ToLowerInvariant();
+        if (ext != ".csv" && ext != ".xlsx")
+        {
+            ModelState.AddModelError(nameof(model.File), "Only CSV and XLSX files are supported.");
+            return View(model);
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+
         await using var stream = model.File.OpenReadStream();
         var storedFilePath = await _fileStorageService.SaveAsync(stream, model.File.FileName, cancellationToken);
-        await _importService.ValidateUploadAsync(storedFilePath, cancellationToken);
+        var batchId = await _importService.ValidateAndCreateBatchAsync(storedFilePath, model.File.FileName, userId, cancellationToken);
 
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Detail), new { id = batchId });
     }
 
     [HttpGet]
-    public async Task<IActionResult> Detail(ulong batchId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Detail(ulong id, CancellationToken cancellationToken)
     {
-        var batch = await _importQueryService.GetBatchDetailAsync(batchId, cancellationToken);
+        var batch = await _importQueryService.GetBatchDetailAsync(id, cancellationToken);
         if (batch is null)
             return NotFound();
 
         return View(new ImportBatchDetailViewModel { Batch = batch });
     }
 
-    [Authorize(Policy = PolicyNames.ImportConfirm)]
+    [Authorize(Policy = PolicyNames.AdminOrAbove)]
     [HttpPost]
-    public async Task<IActionResult> Confirm(ulong batchId, CancellationToken cancellationToken)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Confirm(ulong id, CancellationToken cancellationToken)
     {
-        await _importService.ConfirmImportAsync(batchId, userId: 1, cancellationToken);
-        return RedirectToAction(nameof(Detail), new { batchId });
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+        await _importService.ConfirmImportAsync(id, userId, cancellationToken);
+
+        TempData["SuccessMessage"] = "Import confirmed. New records have been inserted.";
+        return RedirectToAction(nameof(Detail), new { id });
+    }
+
+    [Authorize(Policy = PolicyNames.AdminOrAbove)]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Cancel(ulong id, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+        await _importService.CancelImportAsync(id, userId, cancellationToken);
+
+        TempData["SuccessMessage"] = "Import has been cancelled.";
+        return RedirectToAction(nameof(Detail), new { id });
     }
 }

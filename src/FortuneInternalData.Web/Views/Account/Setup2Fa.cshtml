@@ -1,9 +1,47 @@
-@model FortuneInternalData.Infrastructure.Identity.TotpSetupResult
+@model FortuneInternalData.Web.ViewModels.Setup2FaViewModel
+@{
+    ViewData["Title"] = "Setup Two-Factor Authentication";
+}
 
-<div class="card">
-    <h2>Set Up Google Authenticator</h2>
-    <p class="muted">Scan the QR code or use the manual entry key in Google Authenticator.</p>
-    <div style="width: 180px; height: 180px; background: #e5e7eb; display: flex; align-items: center; justify-content: center;">QR</div>
-    <p><strong>Manual Entry Key:</strong> @Model.ManualEntryKey</p>
-    <p class="muted">QR URI: @Model.QrCodeUri</p>
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h4 class="mb-0"><i class="bi bi-shield-lock"></i> Set Up Google Authenticator</h4>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill"></i>
+                    Scan the QR code below with your Google Authenticator app, then enter the verification code to enable 2FA.
+                </div>
+
+                <div class="text-center mb-4">
+                    @if (!string.IsNullOrEmpty(Model.QrCodeDataUri))
+                    {
+                        <img src="@Model.QrCodeDataUri" alt="QR Code" class="img-fluid" style="max-width: 240px;" />
+                    }
+                </div>
+
+                <div class="mb-4 p-3 bg-light rounded">
+                    <label class="form-label fw-bold">Manual Entry Key</label>
+                    <div class="font-monospace fs-5">@Model.ManualEntryKey</div>
+                    <small class="text-muted">Use this key if you cannot scan the QR code.</small>
+                </div>
+
+                <form method="post" asp-action="Setup2Fa">
+                    <div asp-validation-summary="All" class="alert alert-danger" style="display: @(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Code" class="form-label">Verification Code</label>
+                        <input asp-for="Code" class="form-control form-control-lg text-center" placeholder="000000" maxlength="6" style="letter-spacing: 0.5em;" />
+                        <span asp-validation-for="Code" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle"></i> Verify and Enable 2FA
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>

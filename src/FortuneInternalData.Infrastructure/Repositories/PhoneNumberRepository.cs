@@ -28,7 +28,7 @@ public class PhoneNumberRepository : IPhoneNumberRepository
         var query = _dbContext.PhoneNumbers.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
-            query = query.Where(x => x.PhoneNumber == phoneNumber);
+            query = query.Where(x => x.PhoneNumber.Contains(phoneNumber.Trim()));
 
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(x => x.Status == status);
@@ -48,7 +48,7 @@ public class PhoneNumberRepository : IPhoneNumberRepository
         var query = _dbContext.PhoneNumbers.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
-            query = query.Where(x => x.PhoneNumber == phoneNumber);
+            query = query.Where(x => x.PhoneNumber.Contains(phoneNumber.Trim()));
 
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(x => x.Status == status);

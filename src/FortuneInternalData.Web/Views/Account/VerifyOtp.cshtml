@@ -1,12 +1,32 @@
 @model FortuneInternalData.Web.ViewModels.VerifyOtpViewModel
+@{
+    ViewData["Title"] = "Verify OTP";
+}
 
-<div class="card">
-    <h2>Verify OTP</h2>
-    <form method="post">
-        <div>
-            <label>Authentication Code</label><br />
-            <input asp-for="Code" />
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-shield-lock-fill text-primary" style="font-size: 2.5rem;"></i>
+                    <h3 class="mt-2">Two-Factor Authentication</h3>
+                    <p class="text-muted">Enter the code from your authenticator app</p>
+                </div>
+
+                <form method="post" asp-action="VerifyOtp" asp-route-returnUrl="@ViewData["ReturnUrl"]">
+                    <div asp-validation-summary="All" class="alert alert-danger" style="display: @(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Code" class="form-label">Authentication Code</label>
+                        <input asp-for="Code" class="form-control form-control-lg text-center" placeholder="000000" maxlength="6" autofocus style="letter-spacing: 0.5em; font-size: 1.5rem;" />
+                        <span asp-validation-for="Code" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle"></i> Verify
+                    </button>
+                </form>
+            </div>
         </div>
-        <button type="submit">Verify</button>
-    </form>
+    </div>
 </div>

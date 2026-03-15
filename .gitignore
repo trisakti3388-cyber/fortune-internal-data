@@ -5,6 +5,5 @@ obj/
 *.user
 *.suo
 *.cache
-appsettings.Development.json
 .env
 uploads/

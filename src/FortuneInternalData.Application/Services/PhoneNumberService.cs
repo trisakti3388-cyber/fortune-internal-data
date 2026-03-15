@@ -44,7 +44,25 @@ public class PhoneNumberService : IPhoneNumberService
         };
     }
 
-    public async Task UpdateAsync(PhoneNumberUpdateDto request, ulong userId, CancellationToken cancellationToken = default)
+    public async Task<PhoneNumberListItemDto?> GetByIdAsync(ulong id, CancellationToken cancellationToken = default)
+    {
+        var entity = await _phoneNumberRepository.GetByIdAsync(id, cancellationToken);
+        if (entity == null) return null;
+
+        return new PhoneNumberListItemDto
+        {
+            Id = entity.Id,
+            Seq = entity.Seq,
+            PhoneNumber = entity.PhoneNumber,
+            Remark = entity.Remark,
+            Status = entity.Status,
+            WhatsappStatus = entity.WhatsappStatus,
+            UploadDate = entity.UploadDate,
+            ModifiedDate = entity.ModifiedDate
+        };
+    }
+
+    public async Task UpdateAsync(PhoneNumberUpdateDto request, string userId, CancellationToken cancellationToken = default)
     {
         var entity = await _phoneNumberRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException("Phone number record not found.");
@@ -79,8 +97,7 @@ public class PhoneNumberService : IPhoneNumberService
             TargetId = entity.Id,
             OldValueJson = oldValue,
             NewValueJson = newValue,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow
         }, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

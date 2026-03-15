@@ -1,36 +1,72 @@
 @model FortuneInternalData.Web.ViewModels.UserListViewModel
+@{
+    ViewData["Title"] = "User Management";
+}
 
-<div class="card">
-    <h2>User Management</h2>
-    <p><a class="btn" href="/Users/Create">Add User</a></p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-people-fill"></i> User Management</h2>
+    <a href="/Users/Create" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add User</a>
 </div>
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>2FA</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-    @if (Model.Users.Any())
-    {
-        foreach (var user in Model.Users)
-        {
-            <tr>
-                <td>@user.FullName</td>
-                <td>@user.Email</td>
-                <td>@user.Role</td>
-                <td>@(user.TwoFactorEnabled ? "Enabled" : "Disabled")</td>
-                <td>@(user.IsActive ? "Active" : "Inactive")</td>
-            </tr>
-        }
-    }
-    else
-    {
-        <tr><td colspan="5" class="muted">No users found.</td></tr>
-    }
-    </tbody>
-</table>
+
+<div class="card stat-card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>2FA</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Users.Any())
+                {
+                    foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td>@user.FullName</td>
+                            <td>@user.Email</td>
+                            <td><span class="badge bg-primary">@user.Role</span></td>
+                            <td>
+                                @if (user.TwoFactorEnabled)
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-shield-check"></i> Enabled</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-shield-exclamation"></i> Disabled</span>
+                                }
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <form method="post" asp-action="ToggleActive" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm" onclick="return confirm('Toggle active status for @user.FullName?')">
+                                        @(user.IsActive ? "Deactivate" : "Activate")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">No users found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

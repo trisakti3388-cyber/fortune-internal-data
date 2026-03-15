@@ -22,23 +22,55 @@ public static class DependencyInjection
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
         services
-            .AddIdentity<IdentityApplicationUser, IdentityRole>()
+            .AddIdentity<IdentityApplicationUser, IdentityRole>(options =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequiredLength = 8;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.User.RequireUniqueEmail = true;
+            })
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.LoginPath = "/Account/Login";
+            options.AccessDeniedPath = "/Account/AccessDenied";
+            options.ExpireTimeSpan = TimeSpan.FromHours(8);
+            options.SlidingExpiration = true;
+        });
+
+        services.AddHttpContextAccessor();
+
+        // Validators
         services.AddScoped<IPhoneNumberValidationService, PhoneNumberValidator>();
-        services.AddScoped<IImportService, ImportService>();
+
+        // Identity & Auth
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<ITotpSetupService, TotpSetupService>();
-        services.AddScoped<IFileStorageService, LocalFileStorageService>();
-        services.AddScoped<IImportFileParser, CsvImportFileParser>();
+        services.AddScoped<IdentityBootstrapService>();
 
+        // Import
+        services.AddSingleton<ImportFileParserFactory>();
+        services.AddScoped<IImportService, ImportService>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
+        // Query Services (use Infrastructure implementations)
+        services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IImportQueryService, ImportQueryService>();
+        services.AddScoped<IUserQueryService, UserQueryService>();
+        services.AddScoped<IUserService, UserService>();
+
+        // Repositories
         services.AddScoped<IPhoneNumberRepository, PhoneNumberRepository>();
         services.AddScoped<IImportBatchRepository, ImportBatchRepository>();
         services.AddScoped<IImportBatchRowRepository, ImportBatchRowRepository>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<IdentityBootstrapService>();
 
         return services;
     }
