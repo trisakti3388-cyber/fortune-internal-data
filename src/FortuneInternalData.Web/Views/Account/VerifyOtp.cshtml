@@ -1,0 +1,12 @@
+@model FortuneInternalData.Web.ViewModels.VerifyOtpViewModel
+
+<div class="card">
+    <h2>Verify OTP</h2>
+    <form method="post">
+        <div>
+            <label>Authentication Code</label><br />
+            <input asp-for="Code" />
+        </div>
+        <button type="submit">Verify</button>
+    </form>
+</div>

@@ -1,0 +1,36 @@
+@model FortuneInternalData.Web.ViewModels.UserListViewModel
+
+<div class="card">
+    <h2>User Management</h2>
+    <p><a class="btn" href="/Users/Create">Add User</a></p>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>2FA</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+    @if (Model.Users.Any())
+    {
+        foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.FullName</td>
+                <td>@user.Email</td>
+                <td>@user.Role</td>
+                <td>@(user.TwoFactorEnabled ? "Enabled" : "Disabled")</td>
+                <td>@(user.IsActive ? "Active" : "Inactive")</td>
+            </tr>
+        }
+    }
+    else
+    {
+        <tr><td colspan="5" class="muted">No users found.</td></tr>
+    }
+    </tbody>
+</table>

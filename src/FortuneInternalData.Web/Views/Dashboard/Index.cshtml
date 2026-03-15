@@ -1,0 +1,21 @@
+@model FortuneInternalData.Application.DTOs.DashboardSummaryDto
+
+<div class="card">
+    <h2>Dashboard</h2>
+    <p class="muted">Operational summary</p>
+</div>
+<div class="card">
+    <table>
+        <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+        <tbody>
+            <tr><td>Total Phone Data</td><td>@Model.TotalPhoneData</td></tr>
+            <tr><td>Active</td><td>@Model.ActiveCount</td></tr>
+            <tr><td>Inactive</td><td>@Model.InactiveCount</td></tr>
+            <tr><td>WhatsApp 1day</td><td>@Model.Whatsapp1DayCount</td></tr>
+            <tr><td>WhatsApp 3day</td><td>@Model.Whatsapp3DayCount</td></tr>
+            <tr><td>WhatsApp 7day</td><td>@Model.Whatsapp7DayCount</td></tr>
+            <tr><td>WhatsApp Active</td><td>@Model.WhatsappActiveCount</td></tr>
+            <tr><td>WhatsApp Inactive</td><td>@Model.WhatsappInactiveCount</td></tr>
+        </tbody>
+    </table>
+</div>

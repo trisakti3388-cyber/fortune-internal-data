@@ -1,0 +1,45 @@
+@model FortuneInternalData.Web.ViewModels.PhoneNumberListViewModel
+
+<div class="card">
+    <h2>Phone Data</h2>
+    <form method="get">
+        <input name="SearchPhoneNumber" value="@Model.SearchPhoneNumber" placeholder="Search phone number" />
+        <input name="Status" value="@Model.Status" placeholder="Status" />
+        <input name="WhatsappStatus" value="@Model.WhatsappStatus" placeholder="WhatsApp status" />
+        <button type="submit">Search</button>
+    </form>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Seq</th>
+            <th>Phone Number</th>
+            <th>Remark</th>
+            <th>Status</th>
+            <th>WhatsApp Status</th>
+            <th>Upload Date</th>
+            <th>Modified Date</th>
+        </tr>
+    </thead>
+    <tbody>
+    @if (Model.Result.Items.Any())
+    {
+        foreach (var item in Model.Result.Items)
+        {
+            <tr>
+                <td>@item.Seq</td>
+                <td>@item.PhoneNumber</td>
+                <td>@item.Remark</td>
+                <td>@item.Status</td>
+                <td>@item.WhatsappStatus</td>
+                <td>@item.UploadDate</td>
+                <td>@item.ModifiedDate</td>
+            </tr>
+        }
+    }
+    else
+    {
+        <tr><td colspan="7" class="muted">No data found.</td></tr>
+    }
+    </tbody>
+</table>

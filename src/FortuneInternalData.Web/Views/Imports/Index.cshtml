@@ -1,0 +1,48 @@
+@model FortuneInternalData.Web.ViewModels.ImportHistoryViewModel
+
+<div class="card">
+    <h2>Import History</h2>
+    <p class="muted">Review uploaded files and validation results.</p>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Batch ID</th>
+            <th>File Name</th>
+            <th>Uploaded By</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>New</th>
+            <th>Existing</th>
+            <th>Invalid</th>
+            <th>Duplicate</th>
+            <th>Created</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+    @if (Model.Items.Any())
+    {
+        foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.FileName</td>
+                <td>@item.UploadedByName</td>
+                <td>@item.Status</td>
+                <td>@item.TotalRows</td>
+                <td>@item.NewRows</td>
+                <td>@item.ExistingRows</td>
+                <td>@item.InvalidRows</td>
+                <td>@item.DuplicateRows</td>
+                <td>@item.CreatedAt</td>
+                <td><a class="btn" href="/Imports/Detail?batchId=@item.Id">Detail</a></td>
+            </tr>
+        }
+    }
+    else
+    {
+        <tr><td colspan="11" class="muted">No import history found.</td></tr>
+    }
+    </tbody>
+</table>

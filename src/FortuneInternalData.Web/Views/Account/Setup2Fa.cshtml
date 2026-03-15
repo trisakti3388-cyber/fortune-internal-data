@@ -1,0 +1,9 @@
+@model FortuneInternalData.Infrastructure.Identity.TotpSetupResult
+
+<div class="card">
+    <h2>Set Up Google Authenticator</h2>
+    <p class="muted">Scan the QR code or use the manual entry key in Google Authenticator.</p>
+    <div style="width: 180px; height: 180px; background: #e5e7eb; display: flex; align-items: center; justify-content: center;">QR</div>
+    <p><strong>Manual Entry Key:</strong> @Model.ManualEntryKey</p>
+    <p class="muted">QR URI: @Model.QrCodeUri</p>
+</div>

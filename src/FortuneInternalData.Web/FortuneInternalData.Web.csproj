@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../FortuneInternalData.Application/FortuneInternalData.Application.csproj" />
+    <ProjectReference Include="../FortuneInternalData.Infrastructure/FortuneInternalData.Infrastructure.csproj" />
+    <ProjectReference Include="../FortuneInternalData.Domain/FortuneInternalData.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.0" />
+  </ItemGroup>
+</Project>
