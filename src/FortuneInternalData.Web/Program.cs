@@ -5,6 +5,7 @@ using FortuneInternalData.Web.Extensions;
 using FortuneInternalData.Web.Filters;
 using FortuneInternalData.Web.Middleware;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using FortuneInternalData.Application.Interfaces;
@@ -82,6 +83,13 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+// Trust forwarded headers from Nginx so we get the real client IP
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    KnownProxies = { System.Net.IPAddress.Parse("127.0.0.1") }
+});
 
 // IP whitelist check BEFORE authentication
 app.UseMiddleware<IpWhitelistMiddleware>();
