@@ -28,7 +28,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.HasIndex(x => x.PhoneNumber).IsUnique();
             entity.Property(x => x.Seq).HasMaxLength(50);
-            entity.Property(x => x.PhoneNumber).HasColumnName("phone_number").HasMaxLength(14).IsRequired();
+            entity.Property(x => x.PhoneNumber).HasColumnName("phone_number").HasMaxLength(30).IsRequired();
             entity.Property(x => x.Status).HasColumnName("status").HasMaxLength(20).IsRequired().HasDefaultValue("active");
             entity.Property(x => x.WhatsappStatus).HasColumnName("whatsapp_status").HasMaxLength(20);
             entity.Property(x => x.AgentName).HasColumnName("agent_name").HasMaxLength(100);
@@ -68,7 +68,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.BatchId).HasColumnName("batch_id");
             entity.Property(x => x.Seq).HasColumnName("seq").HasMaxLength(50);
             entity.Property(x => x.RawPhoneNumber).HasColumnName("raw_phone_number").HasMaxLength(100);
-            entity.Property(x => x.NormalizedPhoneNumber).HasColumnName("normalized_phone_number").HasMaxLength(14);
+            entity.Property(x => x.NormalizedPhoneNumber).HasColumnName("normalized_phone_number").HasMaxLength(30);
             entity.Property(x => x.Remark).HasColumnName("remark");
             entity.Property(x => x.WhatsappStatus).HasColumnName("whatsapp_status").HasMaxLength(20);
             entity.Property(x => x.AgentName).HasColumnName("agent_name").HasMaxLength(100);
