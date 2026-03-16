@@ -49,6 +49,8 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.Web8).HasColumnName("web8").HasMaxLength(3);
             entity.Property(x => x.Web9).HasColumnName("web9").HasMaxLength(3);
             entity.Property(x => x.Web10).HasColumnName("web10").HasMaxLength(3);
+            entity.Property(x => x.AssignedUserId).HasColumnName("assigned_user_id").HasMaxLength(450);
+            entity.HasIndex(x => x.AssignedUserId).HasDatabaseName("IX_phone_numbers_assigned_user_id");
         });
 
         modelBuilder.Entity<ImportBatch>(entity =>
@@ -68,6 +70,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.DuplicateRows).HasColumnName("duplicate_rows");
             entity.Property(x => x.ProcessedRows).HasColumnName("processed_rows").HasDefaultValue(0);
             entity.Property(x => x.ErrorMessage).HasColumnName("error_message").HasMaxLength(1000);
+            entity.Property(x => x.AssignedUserId).HasColumnName("assigned_user_id").HasMaxLength(450);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         });
@@ -98,6 +101,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.Web8).HasColumnName("web8").HasMaxLength(3);
             entity.Property(x => x.Web9).HasColumnName("web9").HasMaxLength(3);
             entity.Property(x => x.Web10).HasColumnName("web10").HasMaxLength(3);
+            entity.Property(x => x.AssignedUserId).HasColumnName("assigned_user_id").HasMaxLength(450);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 

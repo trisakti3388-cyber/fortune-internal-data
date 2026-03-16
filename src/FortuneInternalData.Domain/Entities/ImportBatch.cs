@@ -14,4 +14,5 @@ public class ImportBatch : BaseEntity
     public string BatchType { get; set; } = "import"; // import, update, delete, web_status
     public int ProcessedRows { get; set; }
     public string? ErrorMessage { get; set; }
+    public string? AssignedUserId { get; set; }
 }

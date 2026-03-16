@@ -28,13 +28,22 @@ public class ImportService : IImportService
         string originalFileName,
         string uploadedByUserId,
         CancellationToken cancellationToken = default)
-        => CreatePendingBatchAsync(storedFilePath, originalFileName, uploadedByUserId, "import", cancellationToken);
+        => CreatePendingBatchAsync(storedFilePath, originalFileName, uploadedByUserId, "import", null, cancellationToken);
+
+    public Task<ulong> CreatePendingBatchAsync(
+        string storedFilePath,
+        string originalFileName,
+        string uploadedByUserId,
+        string batchType,
+        CancellationToken cancellationToken = default)
+        => CreatePendingBatchAsync(storedFilePath, originalFileName, uploadedByUserId, batchType, null, cancellationToken);
 
     public async Task<ulong> CreatePendingBatchAsync(
         string storedFilePath,
         string originalFileName,
         string uploadedByUserId,
         string batchType,
+        string? assignedUserId,
         CancellationToken cancellationToken = default)
     {
         var batch = new ImportBatch
@@ -46,6 +55,7 @@ public class ImportService : IImportService
             ProcessedRows = 0,
             Status = "processing",
             BatchType = batchType,
+            AssignedUserId = assignedUserId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -154,6 +164,7 @@ public class ImportService : IImportService
                         UpdateStatus = row.UpdateStatus,
                         Web1 = row.Web1, Web2 = row.Web2, Web3 = row.Web3, Web4 = row.Web4, Web5 = row.Web5,
                         Web6 = row.Web6, Web7 = row.Web7, Web8 = row.Web8, Web9 = row.Web9, Web10 = row.Web10,
+                        AssignedUserId = batch.AssignedUserId,
                         RowStatus = status,
                         Message = message,
                         CreatedAt = DateTime.UtcNow,
@@ -427,8 +438,8 @@ public class ImportService : IImportService
     private async Task ConfirmRegularImportAsync(ImportBatch batch, string userId, CancellationToken cancellationToken)
     {
         var sql = @"
-INSERT INTO phone_numbers (seq, phone_number, remark, status, whatsapp_status, agent_name, reference, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, upload_date, modified_date, created_at, updated_at)
-SELECT seq, normalized_phone_number, remark, 'active', whatsapp_status, agent_name, reference, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, NOW(), NOW(), NOW(), NOW()
+INSERT INTO phone_numbers (seq, phone_number, remark, status, whatsapp_status, agent_name, reference, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, assigned_user_id, upload_date, modified_date, created_at, updated_at)
+SELECT seq, normalized_phone_number, remark, 'active', whatsapp_status, agent_name, reference, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, assigned_user_id, NOW(), NOW(), NOW(), NOW()
 FROM import_batch_rows
 WHERE batch_id = {0} AND row_status = 'new'";
 
@@ -600,7 +611,7 @@ WHERE ibr.batch_id = {0} AND ibr.row_status = 'found'";
             var batch = rows.Skip(offset).Take(batchSize).ToList();
 
             var sql = new StringBuilder(
-                "INSERT INTO import_batch_rows (batch_id, seq, raw_phone_number, normalized_phone_number, remark, whatsapp_status, agent_name, reference, update_status, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, row_status, message, created_at, updated_at) VALUES ");
+                "INSERT INTO import_batch_rows (batch_id, seq, raw_phone_number, normalized_phone_number, remark, whatsapp_status, agent_name, reference, update_status, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, row_status, message, created_at, updated_at, assigned_user_id) VALUES ");
 
             var parameters = new List<MySqlConnector.MySqlParameter>();
 
@@ -609,7 +620,7 @@ WHERE ibr.batch_id = {0} AND ibr.row_status = 'found'";
                 var row = batch[j];
                 var p = $"@p{j}_";
                 if (j > 0) sql.Append(',');
-                sql.Append($"({p}0,{p}1,{p}2,{p}3,{p}4,{p}5,{p}6,{p}7,{p}8,{p}9,{p}10,{p}11,{p}12,{p}13,{p}14,{p}15,{p}16,{p}17,{p}18,{p}19,{p}20,{p}21,{p}22)");
+                sql.Append($"({p}0,{p}1,{p}2,{p}3,{p}4,{p}5,{p}6,{p}7,{p}8,{p}9,{p}10,{p}11,{p}12,{p}13,{p}14,{p}15,{p}16,{p}17,{p}18,{p}19,{p}20,{p}21,{p}22,{p}23)");
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}0", row.BatchId));
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}1", (object?)row.Seq ?? DBNull.Value));
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}2", (object?)row.RawPhoneNumber ?? DBNull.Value));
@@ -633,6 +644,7 @@ WHERE ibr.batch_id = {0} AND ibr.row_status = 'found'";
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}20", (object?)row.Message ?? DBNull.Value));
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}21", row.CreatedAt));
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}22", row.UpdatedAt));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}23", (object?)row.AssignedUserId ?? DBNull.Value));
             }
 
             await _dbContext.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray(), cancellationToken);

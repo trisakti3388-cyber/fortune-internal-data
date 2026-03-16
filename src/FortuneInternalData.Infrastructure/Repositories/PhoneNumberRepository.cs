@@ -23,9 +23,9 @@ public class PhoneNumberRepository : IPhoneNumberRepository
     public Task<bool> ExistsAsync(string phoneNumber, CancellationToken cancellationToken = default)
         => _dbContext.PhoneNumbers.AnyAsync(x => x.PhoneNumber == phoneNumber, cancellationToken);
 
-    public async Task<IReadOnlyList<PhoneNumberRecord>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PhoneNumberRecord>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var query = BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo);
+        var query = BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId);
 
         return await query
             .OrderByDescending(x => x.Id)
@@ -34,19 +34,19 @@ public class PhoneNumberRepository : IPhoneNumberRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task<int> CountAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, CancellationToken cancellationToken = default)
+    public Task<int> CountAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, CancellationToken cancellationToken = default)
     {
-        return BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo).CountAsync(cancellationToken);
+        return BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId).CountAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<PhoneNumberRecord>> SearchAllAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PhoneNumberRecord>> SearchAllAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, CancellationToken cancellationToken = default)
     {
-        return await BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo)
+        return await BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId)
             .OrderByDescending(x => x.Id)
             .ToListAsync(cancellationToken);
     }
 
-    private IQueryable<PhoneNumberRecord> BuildFilterQuery(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo)
+    private IQueryable<PhoneNumberRecord> BuildFilterQuery(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId)
     {
         var query = _dbContext.PhoneNumbers.AsNoTracking().AsQueryable();
 
@@ -67,6 +67,9 @@ public class PhoneNumberRepository : IPhoneNumberRepository
 
         if (dateTo.HasValue)
             query = query.Where(x => x.UploadDate <= dateTo.Value.AddDays(1).AddSeconds(-1));
+
+        if (!string.IsNullOrWhiteSpace(assignedUserId))
+            query = query.Where(x => x.AssignedUserId == assignedUserId);
 
         return query;
     }

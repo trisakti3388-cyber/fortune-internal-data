@@ -29,7 +29,7 @@ public class IpWhitelistController : Controller
             .OrderBy(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
 
-        return View(ips);
+        return View("~/Views/Admin/IpWhitelist/Index.cshtml", ips);
     }
 
     [HttpPost("Create")]

@@ -9,15 +9,18 @@ public class PhoneNumberService : IPhoneNumberService
     private readonly IPhoneNumberRepository _phoneNumberRepository;
     private readonly IActivityLogRepository _activityLogRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserQueryService _userQueryService;
 
     public PhoneNumberService(
         IPhoneNumberRepository phoneNumberRepository,
         IActivityLogRepository activityLogRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IUserQueryService userQueryService)
     {
         _phoneNumberRepository = phoneNumberRepository;
         _activityLogRepository = activityLogRepository;
         _unitOfWork = unitOfWork;
+        _userQueryService = userQueryService;
     }
 
     private static PhoneNumberListItemDto ToDto(PhoneNumberRecord x) => new()
@@ -33,34 +36,60 @@ public class PhoneNumberService : IPhoneNumberService
         UploadDate = x.UploadDate,
         ModifiedDate = x.ModifiedDate,
         Web1 = x.Web1, Web2 = x.Web2, Web3 = x.Web3, Web4 = x.Web4, Web5 = x.Web5,
-        Web6 = x.Web6, Web7 = x.Web7, Web8 = x.Web8, Web9 = x.Web9, Web10 = x.Web10
+        Web6 = x.Web6, Web7 = x.Web7, Web8 = x.Web8, Web9 = x.Web9, Web10 = x.Web10,
+        AssignedUserId = x.AssignedUserId
     };
 
-    public async Task<PagedResultDto<PhoneNumberListItemDto>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, int page, int pageSize, CancellationToken cancellationToken = default)
+    private async Task ResolveUserNamesAsync(IList<PhoneNumberListItemDto> dtos, CancellationToken cancellationToken)
     {
-        var items = await _phoneNumberRepository.SearchAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, page, pageSize, cancellationToken);
-        var totalCount = await _phoneNumberRepository.CountAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, cancellationToken);
+        var assignedIds = dtos.Where(x => x.AssignedUserId != null).Select(x => x.AssignedUserId!).Distinct().ToList();
+        if (!assignedIds.Any()) return;
+
+        var users = await _userQueryService.GetUsersAsync(cancellationToken);
+        var userMap = users.ToDictionary(u => u.Id, u => u.FullName);
+        foreach (var dto in dtos)
+        {
+            if (dto.AssignedUserId != null)
+                dto.AssignedUserName = userMap.GetValueOrDefault(dto.AssignedUserId);
+        }
+    }
+
+    public async Task<PagedResultDto<PhoneNumberListItemDto>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var items = await _phoneNumberRepository.SearchAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId, page, pageSize, cancellationToken);
+        var totalCount = await _phoneNumberRepository.CountAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId, cancellationToken);
+
+        var dtos = items.Select(ToDto).ToList();
+        await ResolveUserNamesAsync(dtos, cancellationToken);
 
         return new PagedResultDto<PhoneNumberListItemDto>
         {
             Page = page,
             PageSize = pageSize,
             TotalCount = totalCount,
-            Items = items.Select(ToDto).ToList()
+            Items = dtos
         };
     }
 
-    public async Task<IReadOnlyList<PhoneNumberListItemDto>> SearchAllAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PhoneNumberListItemDto>> SearchAllAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, CancellationToken cancellationToken = default)
     {
-        var items = await _phoneNumberRepository.SearchAllAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, cancellationToken);
-        return items.Select(ToDto).ToList();
+        var items = await _phoneNumberRepository.SearchAllAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId, cancellationToken);
+        var dtos = items.Select(ToDto).ToList();
+        await ResolveUserNamesAsync(dtos, cancellationToken);
+        return dtos;
     }
 
     public async Task<PhoneNumberListItemDto?> GetByIdAsync(ulong id, CancellationToken cancellationToken = default)
     {
         var entity = await _phoneNumberRepository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
-        return ToDto(entity);
+        var dto = ToDto(entity);
+        if (dto.AssignedUserId != null)
+        {
+            var users = await _userQueryService.GetUsersAsync(cancellationToken);
+            dto.AssignedUserName = users.FirstOrDefault(u => u.Id == dto.AssignedUserId)?.FullName;
+        }
+        return dto;
     }
 
     public async Task UpdateAsync(PhoneNumberUpdateDto request, string userId, CancellationToken cancellationToken = default)
@@ -146,14 +175,14 @@ public class PhoneNumberService : IPhoneNumberService
 
     public async Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string? remark, string? reference,
         string? web1, string? web2, string? web3, string? web4, string? web5, string? web6, string? web7, string? web8, string? web9, string? web10,
-        string userId, CancellationToken cancellationToken = default)
+        string? assignedUserId, string userId, CancellationToken cancellationToken = default)
     {
         var idList = ids.ToList();
         if (!idList.Any()) return;
 
         var records = await _phoneNumberRepository.GetByIdsAsync(idList, cancellationToken);
 
-        var oldValues = records.Select(r => new { r.Id, r.Status, r.WhatsappStatus, r.AgentName, r.Remark, r.Reference }).ToList();
+        var oldValues = records.Select(r => new { r.Id, r.Status, r.WhatsappStatus, r.AgentName, r.Remark, r.Reference, r.AssignedUserId }).ToList();
 
         foreach (var record in records)
         {
@@ -172,6 +201,11 @@ public class PhoneNumberService : IPhoneNumberService
             if (!string.IsNullOrEmpty(web8)) record.Web8 = web8;
             if (!string.IsNullOrEmpty(web9)) record.Web9 = web9;
             if (!string.IsNullOrEmpty(web10)) record.Web10 = web10;
+            // __unassign__ = set to null; non-empty user ID = assign; empty = keep existing
+            if (assignedUserId == "__unassign__")
+                record.AssignedUserId = null;
+            else if (!string.IsNullOrEmpty(assignedUserId))
+                record.AssignedUserId = assignedUserId;
             record.ModifiedDate = DateTime.UtcNow;
             record.UpdatedAt = DateTime.UtcNow;
             await _phoneNumberRepository.UpdateAsync(record, cancellationToken);
@@ -184,7 +218,35 @@ public class PhoneNumberService : IPhoneNumberService
             TargetType = "phone_numbers",
             TargetId = 0,
             OldValueJson = System.Text.Json.JsonSerializer.Serialize(oldValues),
-            NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ids = idList, status, whatsappStatus, agentName, remark, reference, count = idList.Count }),
+            NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ids = idList, status, whatsappStatus, agentName, remark, reference, assignedUserId, count = idList.Count }),
+            CreatedAt = DateTime.UtcNow
+        }, cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AssignToUserAsync(IEnumerable<ulong> ids, string? assignedUserId, string currentUserId, CancellationToken cancellationToken = default)
+    {
+        var idList = ids.ToList();
+        if (!idList.Any()) return;
+
+        var records = await _phoneNumberRepository.GetByIdsAsync(idList, cancellationToken);
+
+        foreach (var record in records)
+        {
+            record.AssignedUserId = assignedUserId;
+            record.ModifiedDate = DateTime.UtcNow;
+            record.UpdatedAt = DateTime.UtcNow;
+            await _phoneNumberRepository.UpdateAsync(record, cancellationToken);
+        }
+
+        await _activityLogRepository.AddAsync(new ActivityLog
+        {
+            UserId = currentUserId,
+            Action = "assign_phone_numbers",
+            TargetType = "phone_numbers",
+            TargetId = 0,
+            NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ids = idList, assignedUserId, count = idList.Count }),
             CreatedAt = DateTime.UtcNow
         }, cancellationToken);
 

@@ -22,4 +22,6 @@ public class PhoneNumberListItemDto
     public string? Web8 { get; set; }
     public string? Web9 { get; set; }
     public string? Web10 { get; set; }
+    public string? AssignedUserId { get; set; }
+    public string? AssignedUserName { get; set; }
 }
