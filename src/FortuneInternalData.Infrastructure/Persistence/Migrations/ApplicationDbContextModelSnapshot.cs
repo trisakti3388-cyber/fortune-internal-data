@@ -86,6 +86,11 @@ namespace FortuneInternalData.Infrastructure.Persistence.Migrations
                         .HasColumnType("int")
                         .HasColumnName("duplicate_rows");
 
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("error_message");
+
                     b.Property<int>("ExistingRows")
                         .HasColumnType("int")
                         .HasColumnName("existing_rows");
@@ -103,6 +108,11 @@ namespace FortuneInternalData.Infrastructure.Persistence.Migrations
                     b.Property<int>("NewRows")
                         .HasColumnType("int")
                         .HasColumnName("new_rows");
+
+                    b.Property<int>("ProcessedRows")
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("processed_rows");
 
                     b.Property<string>("Status")
                         .IsRequired()

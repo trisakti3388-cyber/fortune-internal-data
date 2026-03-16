@@ -1,3 +1,4 @@
+using System.Text;
 using FortuneInternalData.Application.Interfaces;
 using FortuneInternalData.Domain.Constants;
 using FortuneInternalData.Domain.Entities;
@@ -22,19 +23,20 @@ public class ImportService : IImportService
         _dbContext = dbContext;
     }
 
-    public async Task<ulong> ValidateAndCreateBatchAsync(string storedFilePath, string originalFileName, string uploadedByUserId, CancellationToken cancellationToken = default)
+    public async Task<ulong> CreatePendingBatchAsync(
+        string storedFilePath,
+        string originalFileName,
+        string uploadedByUserId,
+        CancellationToken cancellationToken = default)
     {
-        var parser = _parserFactory.GetParser(storedFilePath);
-        var parsedRows = await parser.ParseAsync(storedFilePath, cancellationToken);
-
-        // Create the batch record first
         var batch = new ImportBatch
         {
             FileName = originalFileName,
             StoredFilePath = storedFilePath,
             UploadedByUserId = uploadedByUserId,
-            TotalRows = parsedRows.Count,
-            Status = "pending",
+            TotalRows = 0,
+            ProcessedRows = 0,
+            Status = "processing",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -42,89 +44,135 @@ public class ImportService : IImportService
         _dbContext.ImportBatches.Add(batch);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // Validate rows
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        var batchRows = new List<ImportBatchRow>();
-
-        // Batch query existing phone numbers for performance
-        var allNormalized = parsedRows
-            .Select(r => _phoneNumberValidationService.Normalize(r.PhoneNumber))
-            .Where(n => !string.IsNullOrEmpty(n))
-            .Distinct()
-            .ToList();
-
-        var existingPhones = new HashSet<string>(StringComparer.Ordinal);
-        if (allNormalized.Count > 0)
-        {
-            // Query in batches of 500
-            for (int i = 0; i < allNormalized.Count; i += 500)
-            {
-                var chunk = allNormalized.Skip(i).Take(500).ToList();
-                var found = await _dbContext.PhoneNumbers
-                    .Where(p => chunk.Contains(p.PhoneNumber))
-                    .Select(p => p.PhoneNumber)
-                    .ToListAsync(cancellationToken);
-                foreach (var f in found)
-                    existingPhones.Add(f);
-            }
-        }
-
-        int newCount = 0, existingCount = 0, invalidCount = 0, duplicateCount = 0;
-
-        foreach (var row in parsedRows)
-        {
-            var normalized = _phoneNumberValidationService.Normalize(row.PhoneNumber);
-            var status = ImportRowStatuses.New;
-            string? message = null;
-
-            if (!_phoneNumberValidationService.IsValid(normalized))
-            {
-                status = ImportRowStatuses.Invalid;
-                message = "Phone number must be 10-14 digits only.";
-                invalidCount++;
-            }
-            else if (!seen.Add(normalized))
-            {
-                status = ImportRowStatuses.DuplicateFile;
-                message = "Duplicate phone number in uploaded file.";
-                duplicateCount++;
-            }
-            else if (existingPhones.Contains(normalized))
-            {
-                status = ImportRowStatuses.Existing;
-                message = "Phone number already exists in system.";
-                existingCount++;
-            }
-            else
-            {
-                newCount++;
-            }
-
-            batchRows.Add(new ImportBatchRow
-            {
-                BatchId = batch.Id,
-                Seq = row.Seq,
-                RawPhoneNumber = row.PhoneNumber,
-                NormalizedPhoneNumber = normalized,
-                Remark = row.Remark,
-                RowStatus = status,
-                Message = message,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            });
-        }
-
-        // Update batch counts
-        batch.NewRows = newCount;
-        batch.ExistingRows = existingCount;
-        batch.InvalidRows = invalidCount;
-        batch.DuplicateRows = duplicateCount;
-        batch.UpdatedAt = DateTime.UtcNow;
-
-        await _dbContext.ImportBatchRows.AddRangeAsync(batchRows, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
         return batch.Id;
+    }
+
+    public async Task ProcessBatchAsync(ulong batchId, CancellationToken cancellationToken = default)
+    {
+        var batch = await _dbContext.ImportBatches.FirstOrDefaultAsync(b => b.Id == batchId, cancellationToken)
+            ?? throw new InvalidOperationException($"Import batch {batchId} not found.");
+
+        try
+        {
+            var parser = _parserFactory.GetParser(batch.StoredFilePath ?? string.Empty);
+
+            // Tracks file-level duplicates across all chunks
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            int newCount = 0, existingCount = 0, invalidCount = 0, duplicateCount = 0, totalRows = 0;
+
+            await foreach (var chunk in parser.ParseInChunksAsync(batch.StoredFilePath!, 10000, cancellationToken))
+            {
+                // Normalize all rows in this chunk
+                var normalized = chunk.Select(r => (
+                    row: r,
+                    norm: _phoneNumberValidationService.Normalize(r.PhoneNumber)
+                )).ToList();
+
+                // Determine which normalized phones need a DB existence check:
+                // valid, not already seen from previous chunks, distinct within this chunk
+                var toCheckInDb = normalized
+                    .Where(x => _phoneNumberValidationService.IsValid(x.norm) && !seen.Contains(x.norm!))
+                    .Select(x => x.norm!)
+                    .Distinct()
+                    .ToList();
+
+                var existingInDb = new HashSet<string>(StringComparer.Ordinal);
+                for (int i = 0; i < toCheckInDb.Count; i += 500)
+                {
+                    var subChunk = toCheckInDb.Skip(i).Take(500).ToList();
+                    var found = await _dbContext.PhoneNumbers
+                        .Where(p => subChunk.Contains(p.PhoneNumber))
+                        .Select(p => p.PhoneNumber)
+                        .ToListAsync(cancellationToken);
+                    foreach (var f in found)
+                        existingInDb.Add(f);
+                }
+
+                var batchRows = new List<ImportBatchRow>(chunk.Count);
+
+                foreach (var (row, norm) in normalized)
+                {
+                    string status;
+                    string? message;
+
+                    if (!_phoneNumberValidationService.IsValid(norm))
+                    {
+                        status = ImportRowStatuses.Invalid;
+                        message = "Phone number must be 10-14 digits only.";
+                        invalidCount++;
+                    }
+                    else if (!seen.Add(norm!))
+                    {
+                        status = ImportRowStatuses.DuplicateFile;
+                        message = "Duplicate phone number in uploaded file.";
+                        duplicateCount++;
+                    }
+                    else if (existingInDb.Contains(norm!))
+                    {
+                        status = ImportRowStatuses.Existing;
+                        message = "Phone number already exists in system.";
+                        existingCount++;
+                    }
+                    else
+                    {
+                        status = ImportRowStatuses.New;
+                        message = null;
+                        newCount++;
+                    }
+
+                    batchRows.Add(new ImportBatchRow
+                    {
+                        BatchId = batchId,
+                        Seq = row.Seq,
+                        RawPhoneNumber = row.PhoneNumber,
+                        NormalizedPhoneNumber = norm,
+                        Remark = row.Remark,
+                        RowStatus = status,
+                        Message = message,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+
+                await BulkInsertBatchRowsAsync(batchRows, cancellationToken);
+
+                totalRows += chunk.Count;
+                batch.ProcessedRows = totalRows;
+                batch.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            batch.TotalRows = totalRows;
+            batch.NewRows = newCount;
+            batch.ExistingRows = existingCount;
+            batch.InvalidRows = invalidCount;
+            batch.DuplicateRows = duplicateCount;
+            batch.ProcessedRows = totalRows;
+            batch.Status = "pending";
+            batch.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                // Reload batch in case it was detached by earlier error
+                var failedBatch = await _dbContext.ImportBatches
+                    .FirstOrDefaultAsync(b => b.Id == batchId, CancellationToken.None);
+                if (failedBatch != null)
+                {
+                    failedBatch.Status = "error";
+                    failedBatch.ErrorMessage = ex.Message.Length > 1000 ? ex.Message[..1000] : ex.Message;
+                    failedBatch.UpdatedAt = DateTime.UtcNow;
+                    await _dbContext.SaveChangesAsync(CancellationToken.None);
+                }
+            }
+            catch
+            {
+                // Best-effort error status update — don't mask the original exception
+            }
+            throw;
+        }
     }
 
     public async Task ConfirmImportAsync(ulong batchId, string userId, CancellationToken cancellationToken = default)
@@ -135,24 +183,14 @@ public class ImportService : IImportService
         if (batch.Status != "pending")
             throw new InvalidOperationException($"Import batch is in '{batch.Status}' status and cannot be confirmed.");
 
-        var newRows = await _dbContext.ImportBatchRows
-            .Where(x => x.BatchId == batchId && x.RowStatus == ImportRowStatuses.New)
-            .OrderBy(x => x.Id)
-            .ToListAsync(cancellationToken);
+        // Direct SQL INSERT ... SELECT — no entity loading, handles 500K rows in one statement
+        var sql = @"
+INSERT INTO phone_numbers (seq, phone_number, remark, status, whatsapp_status, upload_date, modified_date, created_at, updated_at)
+SELECT seq, normalized_phone_number, remark, 'active', NULL, NOW(), NOW(), NOW(), NOW()
+FROM import_batch_rows
+WHERE batch_id = {0} AND row_status = 'new'";
 
-        var entities = newRows.Select(x => new PhoneNumberRecord
-        {
-            Seq = x.Seq,
-            PhoneNumber = x.NormalizedPhoneNumber ?? string.Empty,
-            Remark = x.Remark,
-            Status = PhoneStatuses.Active,
-            UploadDate = DateTime.UtcNow,
-            ModifiedDate = DateTime.UtcNow,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        }).ToList();
-
-        await _dbContext.PhoneNumbers.AddRangeAsync(entities, cancellationToken);
+        var importedCount = await _dbContext.Database.ExecuteSqlRawAsync(sql, new object[] { batchId }, cancellationToken);
 
         batch.Status = "confirmed";
         batch.UpdatedAt = DateTime.UtcNow;
@@ -163,7 +201,7 @@ public class ImportService : IImportService
             Action = "confirm_import",
             TargetType = "import_batches",
             TargetId = batch.Id,
-            NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ImportedCount = entities.Count }),
+            NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ImportedCount = batch.NewRows }),
             CreatedAt = DateTime.UtcNow
         });
 
@@ -191,5 +229,41 @@ public class ImportService : IImportService
         });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task BulkInsertBatchRowsAsync(List<ImportBatchRow> rows, CancellationToken cancellationToken)
+    {
+        if (rows.Count == 0) return;
+
+        const int batchSize = 1000;
+
+        for (int offset = 0; offset < rows.Count; offset += batchSize)
+        {
+            var batch = rows.Skip(offset).Take(batchSize).ToList();
+
+            var sql = new StringBuilder(
+                "INSERT INTO import_batch_rows (batch_id, seq, raw_phone_number, normalized_phone_number, remark, row_status, message, created_at, updated_at) VALUES ");
+
+            var parameters = new List<object?>(batch.Count * 9);
+
+            for (int j = 0; j < batch.Count; j++)
+            {
+                var row = batch[j];
+                var p = j * 9;
+                if (j > 0) sql.Append(',');
+                sql.Append($"({{{p}}},{{{p + 1}}},{{{p + 2}}},{{{p + 3}}},{{{p + 4}}},{{{p + 5}}},{{{p + 6}}},{{{p + 7}}},{{{p + 8}}})");
+                parameters.Add(row.BatchId);
+                parameters.Add((object?)row.Seq ?? DBNull.Value);
+                parameters.Add((object?)row.RawPhoneNumber ?? DBNull.Value);
+                parameters.Add((object?)row.NormalizedPhoneNumber ?? DBNull.Value);
+                parameters.Add((object?)row.Remark ?? DBNull.Value);
+                parameters.Add(row.RowStatus);
+                parameters.Add((object?)row.Message ?? DBNull.Value);
+                parameters.Add(row.CreatedAt);
+                parameters.Add(row.UpdatedAt);
+            }
+
+            await _dbContext.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray()!, cancellationToken);
+        }
     }
 }

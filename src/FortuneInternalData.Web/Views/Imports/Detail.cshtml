@@ -1,6 +1,9 @@
 @model FortuneInternalData.Web.ViewModels.ImportBatchDetailViewModel
 @{
     ViewData["Title"] = "Import Batch Detail";
+    var b = Model.Batch!;
+    var totalPages = b.TotalRowCount > 0 ? (int)Math.Ceiling((double)b.TotalRowCount / b.PageSize) : 1;
+    var isProcessing = b.Status == "processing";
 }
 
 @if (Model.Batch is null)
@@ -10,9 +13,41 @@
 else
 {
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-file-earmark-text"></i> Import Batch #@Model.Batch.BatchId</h2>
+        <h2><i class="bi bi-file-earmark-text"></i> Import Batch #@b.BatchId</h2>
         <a href="/Imports" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to History</a>
     </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @* Processing progress banner *@
+    @if (isProcessing)
+    {
+        <div class="alert alert-info d-flex align-items-center gap-3 mb-4" id="processingBanner">
+            <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+            <div>
+                <strong>Processing file...</strong>
+                <span id="progressText" class="ms-2 text-muted">Preparing...</span>
+            </div>
+        </div>
+        <div class="progress mb-4" style="height:8px" id="progressBar">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                 id="progressBarInner" role="progressbar" style="width:0%"></div>
+        </div>
+    }
+
+    @if (b.Status == "error")
+    {
+        <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-circle"></i> <strong>Processing failed:</strong>
+            @b.ErrorMessage
+        </div>
+    }
 
     <div class="row g-3 mb-4">
         <div class="col-md-8">
@@ -20,33 +55,33 @@ else
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>File Name:</strong> @Model.Batch.FileName</p>
-                            <p><strong>Uploaded By:</strong> @Model.Batch.UploadedByName</p>
+                            <p><strong>File Name:</strong> @b.FileName</p>
+                            <p><strong>Uploaded By:</strong> @b.UploadedByName</p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Status:</strong> <span class="badge badge-@Model.Batch.Status fs-6">@Model.Batch.Status</span></p>
-                            <p><strong>Created:</strong> @Model.Batch.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                            <p><strong>Status:</strong> <span class="badge badge-@b.Status fs-6">@b.Status</span></p>
+                            <p><strong>Created:</strong> @b.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            @if (Model.Batch.Status == "pending" && (User.IsInRole("Superadmin") || User.IsInRole("Admin")))
+            @if (b.Status == "pending" && (User.IsInRole("Superadmin") || User.IsInRole("Admin")))
             {
                 <div class="card stat-card border-success">
                     <div class="card-body">
-                        <p class="mb-2"><strong>@Model.Batch.Summary.NewRows</strong> new records ready to import.</p>
-                        <form method="post" action="/Imports/Confirm/@Model.Batch.BatchId" class="d-inline">
+                        <p class="mb-2"><strong>@b.Summary.NewRows</strong> new records ready to import.</p>
+                        <form method="post" action="/Imports/Confirm/@b.BatchId" class="d-inline">
                             @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@Model.Batch.BatchId" />
-                            <button type="submit" class="btn btn-success w-100 mb-2" onclick="return confirm('Confirm import of @Model.Batch.Summary.NewRows new records?')">
+                            <input type="hidden" name="id" value="@b.BatchId" />
+                            <button type="submit" class="btn btn-success w-100 mb-2" onclick="return confirm('Confirm import of @b.Summary.NewRows new records?')">
                                 <i class="bi bi-check-circle"></i> Confirm Import
                             </button>
                         </form>
-                        <form method="post" action="/Imports/Cancel/@Model.Batch.BatchId" class="d-inline">
+                        <form method="post" action="/Imports/Cancel/@b.BatchId" class="d-inline">
                             @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@Model.Batch.BatchId" />
+                            <input type="hidden" name="id" value="@b.BatchId" />
                             <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Cancel this import batch?')">
                                 <i class="bi bi-x-circle"></i> Cancel Import
                             </button>
@@ -62,64 +97,181 @@ else
         <div class="card-body">
             <div class="row text-center">
                 <div class="col">
-                    <div class="fw-bold fs-4">@Model.Batch.Summary.TotalRows</div>
+                    <div class="fw-bold fs-4" id="summaryTotal">@b.Summary.TotalRows</div>
                     <div class="text-muted small">Total</div>
                 </div>
                 <div class="col">
-                    <div class="fw-bold fs-4 text-success">@Model.Batch.Summary.NewRows</div>
+                    <div class="fw-bold fs-4 text-success">@b.Summary.NewRows</div>
                     <div class="text-muted small">New</div>
                 </div>
                 <div class="col">
-                    <div class="fw-bold fs-4 text-warning">@Model.Batch.Summary.ExistingRows</div>
+                    <div class="fw-bold fs-4 text-warning">@b.Summary.ExistingRows</div>
                     <div class="text-muted small">Existing</div>
                 </div>
                 <div class="col">
-                    <div class="fw-bold fs-4 text-danger">@Model.Batch.Summary.InvalidRows</div>
+                    <div class="fw-bold fs-4 text-danger">@b.Summary.InvalidRows</div>
                     <div class="text-muted small">Invalid</div>
                 </div>
                 <div class="col">
-                    <div class="fw-bold fs-4 text-purple">@Model.Batch.Summary.DuplicateRows</div>
+                    <div class="fw-bold fs-4 text-purple">@b.Summary.DuplicateRows</div>
                     <div class="text-muted small">Duplicate</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card stat-card">
-        <div class="card-header bg-white"><h5 class="mb-0">Row Details</h5></div>
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>Seq</th>
-                        <th>Raw Phone</th>
-                        <th>Normalized</th>
-                        <th>Remark</th>
-                        <th>Status</th>
-                        <th>Message</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Batch.Rows.Any())
-                    {
-                        foreach (var row in Model.Batch.Rows)
-                        {
-                            <tr class="@(row.RowStatus == "new" ? "table-success" : row.RowStatus == "invalid" ? "table-danger" : row.RowStatus == "existing" ? "table-warning" : "table-secondary")">
-                                <td>@row.Seq</td>
-                                <td><code>@row.RawPhoneNumber</code></td>
-                                <td><code>@row.NormalizedPhoneNumber</code></td>
-                                <td>@row.Remark</td>
-                                <td><span class="badge badge-@row.RowStatus">@row.RowStatus</span></td>
-                                <td class="small">@row.Message</td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr><td colspan="6" class="text-center text-muted py-4">No row details found.</td></tr>
-                    }
-                </tbody>
-            </table>
+    @if (!isProcessing)
+    {
+        <div class="card stat-card mb-3">
+            <div class="card-body py-2">
+                <form method="get" class="row g-2 align-items-end">
+                    <input type="hidden" name="id" value="@b.BatchId" />
+                    <div class="col-auto">
+                        <label class="form-label small mb-1">Filter by Status</label>
+                        <select name="statusFilter" class="form-select form-select-sm">
+                            <option value="">All statuses</option>
+                            @foreach (var s in new[] { "new", "existing", "invalid", "duplicate_file" })
+                            {
+                                <option value="@s" selected="@(b.StatusFilter == s)">@s</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label small mb-1">Per Page</label>
+                        <select name="pageSize" class="form-select form-select-sm">
+                            @foreach (var ps in new[] { 50, 100, 500, 1000 })
+                            {
+                                <option value="@ps" selected="@(b.PageSize == ps)">@ps</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <input type="hidden" name="page" value="1" />
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> Filter</button>
+                        <a href="/Imports/Detail/@b.BatchId" class="btn btn-sm btn-outline-secondary">Clear</a>
+                    </div>
+                    <div class="col-auto ms-auto align-self-end">
+                        <span class="text-muted small">
+                            Showing @b.Rows.Count of @b.TotalRowCount.ToString("N0") rows
+                            (page @b.Page of @totalPages)
+                        </span>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
+
+        <div class="card stat-card">
+            <div class="card-header bg-white"><h5 class="mb-0">Row Details</h5></div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Seq</th>
+                            <th>Raw Phone</th>
+                            <th>Normalized</th>
+                            <th>Remark</th>
+                            <th>Status</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (b.Rows.Any())
+                        {
+                            foreach (var row in b.Rows)
+                            {
+                                <tr class="@(row.RowStatus == "new" ? "table-success" : row.RowStatus == "invalid" ? "table-danger" : row.RowStatus == "existing" ? "table-warning" : "table-secondary")">
+                                    <td>@row.Seq</td>
+                                    <td><code>@row.RawPhoneNumber</code></td>
+                                    <td><code>@row.NormalizedPhoneNumber</code></td>
+                                    <td>@row.Remark</td>
+                                    <td><span class="badge badge-@row.RowStatus">@row.RowStatus</span></td>
+                                    <td class="small">@row.Message</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="6" class="text-center text-muted py-4">No row details found.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+                    @if (b.Page > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="/Imports/Detail/@b.BatchId?page=@(b.Page - 1)&pageSize=@b.PageSize&statusFilter=@b.StatusFilter">&laquo; Prev</a>
+                        </li>
+                    }
+                    @for (int i = Math.Max(1, b.Page - 2); i <= Math.Min(totalPages, b.Page + 2); i++)
+                    {
+                        <li class="page-item @(i == b.Page ? "active" : "")">
+                            <a class="page-link" href="/Imports/Detail/@b.BatchId?page=@i&pageSize=@b.PageSize&statusFilter=@b.StatusFilter">@i</a>
+                        </li>
+                    }
+                    @if (b.Page < totalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="/Imports/Detail/@b.BatchId?page=@(b.Page + 1)&pageSize=@b.PageSize&statusFilter=@b.StatusFilter">Next &raquo;</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+    else
+    {
+        <div class="card stat-card">
+            <div class="card-body text-center text-muted py-5">
+                <div class="spinner-border text-secondary mb-3" role="status"></div>
+                <p>Row details will appear here once processing is complete.</p>
+            </div>
+        </div>
+    }
+}
+
+@if (isProcessing)
+{
+    @section Scripts {
+        <script>
+            (function () {
+                var batchId = @b.BatchId;
+                var pollInterval = 2000;
+                var timer = null;
+
+                function poll() {
+                    fetch('/Imports/Status/' + batchId)
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            var progressText = document.getElementById('progressText');
+                            var progressBarInner = document.getElementById('progressBarInner');
+
+                            if (data.processedRows > 0) {
+                                progressText.textContent = data.processedRows.toLocaleString() + ' rows processed...';
+                                if (data.totalRows > 0) {
+                                    var pct = Math.min(100, Math.round(data.processedRows / data.totalRows * 100));
+                                    progressBarInner.style.width = pct + '%';
+                                } else {
+                                    progressBarInner.style.width = '30%';
+                                }
+                            }
+
+                            if (data.status !== 'processing') {
+                                clearInterval(timer);
+                                window.location.reload();
+                            }
+                        })
+                        .catch(function () { /* silently ignore poll errors */ });
+                }
+
+                timer = setInterval(poll, pollInterval);
+                poll();
+            })();
+        </script>
+    }
 }

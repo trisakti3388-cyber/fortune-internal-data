@@ -11,14 +11,7 @@ public class CsvImportFileParser : IImportFileParser
     {
         var rows = new List<ParsedImportRow>();
 
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            HasHeaderRecord = true,
-            MissingFieldFound = null,
-            HeaderValidated = null,
-            PrepareHeaderForMatch = args => args.Header.Trim().ToLowerInvariant().Replace(" ", "_"),
-            BadDataFound = null
-        };
+        var config = BuildConfig();
 
         using var reader = new StreamReader(storedFilePath);
         using var csv = new CsvReader(reader, config);
@@ -28,22 +21,74 @@ public class CsvImportFileParser : IImportFileParser
 
         while (csv.Read())
         {
-            var phoneNumber = csv.GetField("phone_number")
-                              ?? csv.GetField("phonenumber")
-                              ?? csv.GetField("phone")
-                              ?? string.Empty;
-
-            var seq = csv.GetField("seq") ?? csv.GetField("no") ?? null;
-            var remark = csv.GetField("remark") ?? csv.GetField("remarks") ?? null;
-
-            rows.Add(new ParsedImportRow
-            {
-                Seq = seq,
-                PhoneNumber = phoneNumber.Trim(),
-                Remark = remark
-            });
+            var row = ReadRow(csv);
+            if (row != null) rows.Add(row);
         }
 
         return Task.FromResult<IReadOnlyList<ParsedImportRow>>(rows);
+    }
+
+    public async IAsyncEnumerable<IReadOnlyList<ParsedImportRow>> ParseInChunksAsync(
+        string storedFilePath,
+        int chunkSize = 10000,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var config = BuildConfig();
+
+        using var reader = new StreamReader(storedFilePath);
+        using var csv = new CsvReader(reader, config);
+
+        csv.Read();
+        csv.ReadHeader();
+
+        var chunk = new List<ParsedImportRow>(chunkSize);
+
+        while (csv.Read())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var row = ReadRow(csv);
+            if (row != null)
+            {
+                chunk.Add(row);
+
+                if (chunk.Count >= chunkSize)
+                {
+                    yield return chunk;
+                    chunk = new List<ParsedImportRow>(chunkSize);
+                    await Task.Yield();
+                }
+            }
+        }
+
+        if (chunk.Count > 0)
+            yield return chunk;
+    }
+
+    private static CsvConfiguration BuildConfig() => new CsvConfiguration(CultureInfo.InvariantCulture)
+    {
+        HasHeaderRecord = true,
+        MissingFieldFound = null,
+        HeaderValidated = null,
+        PrepareHeaderForMatch = args => args.Header.Trim().ToLowerInvariant().Replace(" ", "_"),
+        BadDataFound = null
+    };
+
+    private static ParsedImportRow? ReadRow(CsvReader csv)
+    {
+        var phoneNumber = csv.GetField("phone_number")
+                          ?? csv.GetField("phonenumber")
+                          ?? csv.GetField("phone")
+                          ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            return null;
+
+        return new ParsedImportRow
+        {
+            Seq = csv.GetField("seq") ?? csv.GetField("no") ?? null,
+            PhoneNumber = phoneNumber.Trim(),
+            Remark = csv.GetField("remark") ?? csv.GetField("remarks") ?? null
+        };
     }
 }

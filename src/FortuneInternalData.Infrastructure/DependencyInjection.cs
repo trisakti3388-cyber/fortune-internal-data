@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace FortuneInternalData.Infrastructure;
 
@@ -58,6 +59,8 @@ public static class DependencyInjection
         services.AddSingleton<ImportFileParserFactory>();
         services.AddScoped<IImportService, ImportService>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddSingleton<IImportBackgroundQueue, ImportBackgroundQueue>();
+        services.AddHostedService<ImportBackgroundWorker>();
 
         // Query Services (use Infrastructure implementations)
         services.AddScoped<IDashboardService, DashboardService>();

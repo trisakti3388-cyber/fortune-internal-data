@@ -14,15 +14,18 @@ public class ImportsController : Controller
     private readonly IImportService _importService;
     private readonly IImportQueryService _importQueryService;
     private readonly IFileStorageService _fileStorageService;
+    private readonly IImportBackgroundQueue _backgroundQueue;
 
     public ImportsController(
         IImportService importService,
         IImportQueryService importQueryService,
-        IFileStorageService fileStorageService)
+        IFileStorageService fileStorageService,
+        IImportBackgroundQueue backgroundQueue)
     {
         _importService = importService;
         _importQueryService = importQueryService;
         _fileStorageService = fileStorageService;
+        _backgroundQueue = backgroundQueue;
     }
 
     [HttpGet]
@@ -54,12 +57,10 @@ public class ImportsController : Controller
         worksheet.Cell(1, 2).Value = "phone_number";
         worksheet.Cell(1, 3).Value = "remark";
 
-        // Style header row
         var headerRow = worksheet.Row(1);
         headerRow.Style.Font.Bold = true;
         headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
 
-        // Auto-fit columns
         worksheet.Columns().AdjustToContents();
 
         using var stream = new MemoryStream();
@@ -93,19 +94,39 @@ public class ImportsController : Controller
 
         await using var stream = model.File.OpenReadStream();
         var storedFilePath = await _fileStorageService.SaveAsync(stream, model.File.FileName, cancellationToken);
-        var batchId = await _importService.ValidateAndCreateBatchAsync(storedFilePath, model.File.FileName, userId, cancellationToken);
+
+        // Create the batch record immediately (status: "processing") and return
+        var batchId = await _importService.CreatePendingBatchAsync(storedFilePath, model.File.FileName, userId, cancellationToken);
+
+        // Queue for background processing
+        _backgroundQueue.Enqueue(batchId);
 
         return RedirectToAction(nameof(Detail), new { id = batchId });
     }
 
     [HttpGet]
-    public async Task<IActionResult> Detail(ulong id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Detail(
+        ulong id,
+        int page = 1,
+        int pageSize = 100,
+        string? statusFilter = null,
+        CancellationToken cancellationToken = default)
     {
-        var batch = await _importQueryService.GetBatchDetailAsync(id, cancellationToken);
+        var batch = await _importQueryService.GetBatchDetailAsync(id, page, pageSize, statusFilter, cancellationToken);
         if (batch is null)
             return NotFound();
 
         return View(new ImportBatchDetailViewModel { Batch = batch });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Status(ulong id, CancellationToken cancellationToken)
+    {
+        var status = await _importQueryService.GetBatchStatusAsync(id, cancellationToken);
+        if (status is null)
+            return NotFound();
+
+        return Json(status);
     }
 
     [Authorize(Policy = PolicyNames.AdminOrAbove)]

@@ -3,6 +3,7 @@ namespace FortuneInternalData.Application.Interfaces;
 public interface IImportFileParser
 {
     Task<IReadOnlyList<ParsedImportRow>> ParseAsync(string storedFilePath, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<IReadOnlyList<ParsedImportRow>> ParseInChunksAsync(string storedFilePath, int chunkSize = 10000, CancellationToken cancellationToken = default);
 }
 
 public class ParsedImportRow

@@ -51,6 +51,8 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.ExistingRows).HasColumnName("existing_rows");
             entity.Property(x => x.InvalidRows).HasColumnName("invalid_rows");
             entity.Property(x => x.DuplicateRows).HasColumnName("duplicate_rows");
+            entity.Property(x => x.ProcessedRows).HasColumnName("processed_rows").HasDefaultValue(0);
+            entity.Property(x => x.ErrorMessage).HasColumnName("error_message").HasMaxLength(1000);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         });

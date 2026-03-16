@@ -2,10 +2,22 @@ using FortuneInternalData.Infrastructure.Identity;
 using FortuneInternalData.Infrastructure.Persistence;
 using FortuneInternalData.Web.Extensions;
 using FortuneInternalData.Web.Filters;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Allow large file uploads (up to 1 GB)
+builder.WebHost.ConfigureKestrel(o =>
+{
+    o.Limits.MaxRequestBodySize = 1_073_741_824; // 1 GB
+});
+
+builder.Services.Configure<FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 1_073_741_824; // 1 GB
+});
 
 builder.Services.AddScoped<MustChangePasswordFilter>();
 builder.Services.AddControllersWithViews(options =>
