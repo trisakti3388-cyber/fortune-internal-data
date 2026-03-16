@@ -6,4 +6,6 @@ public class PhoneNumberUpdateDto
     public string Status { get; set; } = string.Empty;
     public string? WhatsappStatus { get; set; }
     public string? Remark { get; set; }
+    public string? AgentName { get; set; }
+    public string? Reference { get; set; }
 }

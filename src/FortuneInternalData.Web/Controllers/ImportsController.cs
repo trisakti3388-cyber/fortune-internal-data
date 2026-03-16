@@ -56,10 +56,24 @@ public class ImportsController : Controller
         worksheet.Cell(1, 1).Value = "seq";
         worksheet.Cell(1, 2).Value = "phone_number";
         worksheet.Cell(1, 3).Value = "remark";
+        worksheet.Cell(1, 4).Value = "whatsapp_status";
+        worksheet.Cell(1, 5).Value = "agent_name";
+        worksheet.Cell(1, 6).Value = "reference";
+
+        // Example row
+        worksheet.Cell(2, 1).Value = "1";
+        worksheet.Cell(2, 2).Value = "081234567890";
+        worksheet.Cell(2, 3).Value = "Example remark";
+        worksheet.Cell(2, 4).Value = "active";
+        worksheet.Cell(2, 5).Value = "John Doe";
+        worksheet.Cell(2, 6).Value = "REF-001";
 
         var headerRow = worksheet.Row(1);
         headerRow.Style.Font.Bold = true;
         headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
+
+        var exampleRow = worksheet.Row(2);
+        exampleRow.Style.Fill.BackgroundColor = XLColor.LightYellow;
 
         worksheet.Columns().AdjustToContents();
 
@@ -117,6 +131,52 @@ public class ImportsController : Controller
             return NotFound();
 
         return View(new ImportBatchDetailViewModel { Batch = batch });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportBatch(ulong id, CancellationToken cancellationToken)
+    {
+        var batch = await _importQueryService.GetBatchDetailAsync(id, 1, int.MaxValue, null, cancellationToken);
+        if (batch is null)
+            return NotFound();
+
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("ImportRows");
+
+        // Headers
+        ws.Cell(1, 1).Value = "seq";
+        ws.Cell(1, 2).Value = "raw_phone_number";
+        ws.Cell(1, 3).Value = "normalized_phone_number";
+        ws.Cell(1, 4).Value = "remark";
+        ws.Cell(1, 5).Value = "row_status";
+        ws.Cell(1, 6).Value = "message";
+
+        var headerRow = ws.Row(1);
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
+
+        int row = 2;
+        foreach (var r in batch.Rows)
+        {
+            ws.Cell(row, 1).Value = r.Seq ?? string.Empty;
+            ws.Cell(row, 2).Value = r.RawPhoneNumber ?? string.Empty;
+            ws.Cell(row, 3).Value = r.NormalizedPhoneNumber ?? string.Empty;
+            ws.Cell(row, 4).Value = r.Remark ?? string.Empty;
+            ws.Cell(row, 5).Value = r.RowStatus;
+            ws.Cell(row, 6).Value = r.Message ?? string.Empty;
+            row++;
+        }
+
+        ws.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        var fileName = $"import_batch_{id}_{batch.Status}.xlsx";
+        return File(stream.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
     }
 
     [HttpGet]

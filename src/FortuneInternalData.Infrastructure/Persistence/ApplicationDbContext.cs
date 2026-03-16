@@ -15,6 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
     public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
     public DbSet<ImportBatchRow> ImportBatchRows => Set<ImportBatchRow>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +31,8 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.PhoneNumber).HasColumnName("phone_number").HasMaxLength(14).IsRequired();
             entity.Property(x => x.Status).HasColumnName("status").HasMaxLength(20).IsRequired().HasDefaultValue("active");
             entity.Property(x => x.WhatsappStatus).HasColumnName("whatsapp_status").HasMaxLength(20);
+            entity.Property(x => x.AgentName).HasColumnName("agent_name").HasMaxLength(100);
+            entity.Property(x => x.Reference).HasColumnName("reference").HasMaxLength(255);
             entity.Property(x => x.Remark).HasColumnName("remark");
             entity.Property(x => x.UploadDate).HasColumnName("upload_date");
             entity.Property(x => x.ModifiedDate).HasColumnName("modified_date");
@@ -67,6 +70,9 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.RawPhoneNumber).HasColumnName("raw_phone_number").HasMaxLength(100);
             entity.Property(x => x.NormalizedPhoneNumber).HasColumnName("normalized_phone_number").HasMaxLength(14);
             entity.Property(x => x.Remark).HasColumnName("remark");
+            entity.Property(x => x.WhatsappStatus).HasColumnName("whatsapp_status").HasMaxLength(20);
+            entity.Property(x => x.AgentName).HasColumnName("agent_name").HasMaxLength(100);
+            entity.Property(x => x.Reference).HasColumnName("reference").HasMaxLength(255);
             entity.Property(x => x.RowStatus).HasColumnName("row_status").HasMaxLength(30).IsRequired();
             entity.Property(x => x.Message).HasColumnName("message").HasMaxLength(255);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -94,6 +100,20 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.HasIndex(x => x.Action);
             entity.HasIndex(x => x.CreatedAt);
             entity.HasIndex(x => new { x.TargetType, x.TargetId });
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.ToTable("role_permissions");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(x => x.RoleId).HasColumnName("role_id").HasMaxLength(450).IsRequired();
+            entity.Property(x => x.Module).HasColumnName("module").HasMaxLength(50).IsRequired();
+            entity.Property(x => x.CanView).HasColumnName("can_view").HasDefaultValue(false);
+            entity.Property(x => x.CanEdit).HasColumnName("can_edit").HasDefaultValue(false);
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            entity.HasIndex(x => new { x.RoleId, x.Module }).IsUnique();
         });
     }
 }

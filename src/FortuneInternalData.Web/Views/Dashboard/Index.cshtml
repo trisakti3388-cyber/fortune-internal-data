@@ -1,4 +1,5 @@
 @model FortuneInternalData.Application.DTOs.DashboardSummaryDto
+@using FortuneInternalData.Web.Extensions
 @{
     ViewData["Title"] = "Dashboard";
     var recentBatches = ViewBag.RecentBatches as List<FortuneInternalData.Application.DTOs.ImportBatchListItemDto> ?? new();
@@ -93,7 +94,7 @@
                             <td><span class="badge badge-@batch.Status">@batch.Status</span></td>
                             <td>@batch.NewRows</td>
                             <td>@batch.TotalRows</td>
-                            <td>@batch.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@batch.CreatedAt.ToJakartaDisplay()</td>
                         </tr>
                     }
                 </tbody>

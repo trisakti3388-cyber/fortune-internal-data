@@ -74,6 +74,8 @@ public class CsvImportFileParser : IImportFileParser
         BadDataFound = null
     };
 
+    private static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+
     private static ParsedImportRow? ReadRow(CsvReader csv)
     {
         var phoneNumber = csv.GetField("phone_number")
@@ -88,7 +90,10 @@ public class CsvImportFileParser : IImportFileParser
         {
             Seq = csv.GetField("seq") ?? csv.GetField("no") ?? null,
             PhoneNumber = phoneNumber.Trim(),
-            Remark = csv.GetField("remark") ?? csv.GetField("remarks") ?? null
+            Remark = csv.GetField("remark") ?? csv.GetField("remarks") ?? null,
+            WhatsappStatus = NullIfEmpty(csv.GetField("whatsapp_status")),
+            AgentName = NullIfEmpty(csv.GetField("agent_name")),
+            Reference = NullIfEmpty(csv.GetField("reference")),
         };
     }
 }

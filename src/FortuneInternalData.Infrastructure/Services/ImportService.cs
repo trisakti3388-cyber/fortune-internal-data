@@ -127,6 +127,9 @@ public class ImportService : IImportService
                         RawPhoneNumber = row.PhoneNumber,
                         NormalizedPhoneNumber = norm,
                         Remark = row.Remark,
+                        WhatsappStatus = row.WhatsappStatus,
+                        AgentName = row.AgentName,
+                        Reference = row.Reference,
                         RowStatus = status,
                         Message = message,
                         CreatedAt = DateTime.UtcNow,
@@ -185,8 +188,8 @@ public class ImportService : IImportService
 
         // Direct SQL INSERT ... SELECT — no entity loading, handles 500K rows in one statement
         var sql = @"
-INSERT INTO phone_numbers (seq, phone_number, remark, status, whatsapp_status, upload_date, modified_date, created_at, updated_at)
-SELECT seq, normalized_phone_number, remark, 'active', NULL, NOW(), NOW(), NOW(), NOW()
+INSERT INTO phone_numbers (seq, phone_number, remark, status, whatsapp_status, agent_name, reference, upload_date, modified_date, created_at, updated_at)
+SELECT seq, normalized_phone_number, remark, 'active', whatsapp_status, agent_name, reference, NOW(), NOW(), NOW(), NOW()
 FROM import_batch_rows
 WHERE batch_id = {0} AND row_status = 'new'";
 
@@ -242,21 +245,25 @@ WHERE batch_id = {0} AND row_status = 'new'";
             var batch = rows.Skip(offset).Take(batchSize).ToList();
 
             var sql = new StringBuilder(
-                "INSERT INTO import_batch_rows (batch_id, seq, raw_phone_number, normalized_phone_number, remark, row_status, message, created_at, updated_at) VALUES ");
+                "INSERT INTO import_batch_rows (batch_id, seq, raw_phone_number, normalized_phone_number, remark, whatsapp_status, agent_name, reference, row_status, message, created_at, updated_at) VALUES ");
 
-            var parameters = new List<object?>(batch.Count * 9);
+            const int colCount = 12;
+            var parameters = new List<object?>(batch.Count * colCount);
 
             for (int j = 0; j < batch.Count; j++)
             {
                 var row = batch[j];
-                var p = j * 9;
+                var p = j * colCount;
                 if (j > 0) sql.Append(',');
-                sql.Append($"({{{p}}},{{{p + 1}}},{{{p + 2}}},{{{p + 3}}},{{{p + 4}}},{{{p + 5}}},{{{p + 6}}},{{{p + 7}}},{{{p + 8}}})");
+                sql.Append($"({{{p}}},{{{p + 1}}},{{{p + 2}}},{{{p + 3}}},{{{p + 4}}},{{{p + 5}}},{{{p + 6}}},{{{p + 7}}},{{{p + 8}}},{{{p + 9}}},{{{p + 10}}},{{{p + 11}}})");
                 parameters.Add(row.BatchId);
                 parameters.Add((object?)row.Seq ?? DBNull.Value);
                 parameters.Add((object?)row.RawPhoneNumber ?? DBNull.Value);
                 parameters.Add((object?)row.NormalizedPhoneNumber ?? DBNull.Value);
                 parameters.Add((object?)row.Remark ?? DBNull.Value);
+                parameters.Add((object?)row.WhatsappStatus ?? DBNull.Value);
+                parameters.Add((object?)row.AgentName ?? DBNull.Value);
+                parameters.Add((object?)row.Reference ?? DBNull.Value);
                 parameters.Add(row.RowStatus);
                 parameters.Add((object?)row.Message ?? DBNull.Value);
                 parameters.Add(row.CreatedAt);

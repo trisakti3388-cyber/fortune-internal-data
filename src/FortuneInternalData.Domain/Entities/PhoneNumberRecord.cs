@@ -7,6 +7,8 @@ public class PhoneNumberRecord : BaseEntity
     public string? Remark { get; set; }
     public string Status { get; set; } = "active";
     public string? WhatsappStatus { get; set; }
+    public string? AgentName { get; set; }
+    public string? Reference { get; set; }
     public DateTime? UploadDate { get; set; }
     public DateTime? ModifiedDate { get; set; }
 }

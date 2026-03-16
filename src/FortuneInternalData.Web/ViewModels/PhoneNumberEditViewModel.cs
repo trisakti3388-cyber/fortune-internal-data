@@ -15,4 +15,10 @@ public class PhoneNumberEditViewModel
 
     [StringLength(500)]
     public string? Remark { get; set; }
+
+    [StringLength(100)]
+    public string? AgentName { get; set; }
+
+    [StringLength(255)]
+    public string? Reference { get; set; }
 }

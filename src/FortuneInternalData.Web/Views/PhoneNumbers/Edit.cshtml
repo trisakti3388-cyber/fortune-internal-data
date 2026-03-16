@@ -1,5 +1,6 @@
 @model FortuneInternalData.Web.ViewModels.PhoneNumberEditViewModel
 @using FortuneInternalData.Domain.Constants
+@using FortuneInternalData.Web.Extensions
 @{
     ViewData["Title"] = "Edit Phone Record";
 }
@@ -41,6 +42,18 @@
                                 <option value="@s">@s</option>
                             }
                         </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="AgentName" class="form-label">Agent Name</label>
+                        <input asp-for="AgentName" class="form-control" placeholder="Agent name (optional)" maxlength="100" />
+                        <span asp-validation-for="AgentName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Reference" class="form-label">Reference</label>
+                        <input asp-for="Reference" class="form-control" placeholder="Reference (optional)" maxlength="255" />
+                        <span asp-validation-for="Reference" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">

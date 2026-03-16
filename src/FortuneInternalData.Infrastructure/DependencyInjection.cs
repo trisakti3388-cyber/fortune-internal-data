@@ -68,6 +68,9 @@ public static class DependencyInjection
         services.AddScoped<IUserQueryService, UserQueryService>();
         services.AddScoped<IUserService, UserService>();
 
+        // Permissions
+        services.AddScoped<IPermissionService, PermissionService>();
+
         // Repositories
         services.AddScoped<IPhoneNumberRepository, PhoneNumberRepository>();
         services.AddScoped<IImportBatchRepository, ImportBatchRepository>();

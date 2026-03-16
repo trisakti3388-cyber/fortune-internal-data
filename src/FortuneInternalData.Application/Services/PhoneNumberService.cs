@@ -20,46 +20,45 @@ public class PhoneNumberService : IPhoneNumberService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<PagedResultDto<PhoneNumberListItemDto>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, int page, int pageSize, CancellationToken cancellationToken = default)
+    private static PhoneNumberListItemDto ToDto(PhoneNumberRecord x) => new()
     {
-        var items = await _phoneNumberRepository.SearchAsync(phoneNumber, status, whatsappStatus, page, pageSize, cancellationToken);
-        var totalCount = await _phoneNumberRepository.CountAsync(phoneNumber, status, whatsappStatus, cancellationToken);
+        Id = x.Id,
+        Seq = x.Seq,
+        PhoneNumber = x.PhoneNumber,
+        Remark = x.Remark,
+        Status = x.Status,
+        WhatsappStatus = x.WhatsappStatus,
+        AgentName = x.AgentName,
+        Reference = x.Reference,
+        UploadDate = x.UploadDate,
+        ModifiedDate = x.ModifiedDate
+    };
+
+    public async Task<PagedResultDto<PhoneNumberListItemDto>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var items = await _phoneNumberRepository.SearchAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, page, pageSize, cancellationToken);
+        var totalCount = await _phoneNumberRepository.CountAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, cancellationToken);
 
         return new PagedResultDto<PhoneNumberListItemDto>
         {
             Page = page,
             PageSize = pageSize,
             TotalCount = totalCount,
-            Items = items.Select(x => new PhoneNumberListItemDto
-            {
-                Id = x.Id,
-                Seq = x.Seq,
-                PhoneNumber = x.PhoneNumber,
-                Remark = x.Remark,
-                Status = x.Status,
-                WhatsappStatus = x.WhatsappStatus,
-                UploadDate = x.UploadDate,
-                ModifiedDate = x.ModifiedDate
-            }).ToList()
+            Items = items.Select(ToDto).ToList()
         };
+    }
+
+    public async Task<IReadOnlyList<PhoneNumberListItemDto>> SearchAllAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, CancellationToken cancellationToken = default)
+    {
+        var items = await _phoneNumberRepository.SearchAllAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, cancellationToken);
+        return items.Select(ToDto).ToList();
     }
 
     public async Task<PhoneNumberListItemDto?> GetByIdAsync(ulong id, CancellationToken cancellationToken = default)
     {
         var entity = await _phoneNumberRepository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
-
-        return new PhoneNumberListItemDto
-        {
-            Id = entity.Id,
-            Seq = entity.Seq,
-            PhoneNumber = entity.PhoneNumber,
-            Remark = entity.Remark,
-            Status = entity.Status,
-            WhatsappStatus = entity.WhatsappStatus,
-            UploadDate = entity.UploadDate,
-            ModifiedDate = entity.ModifiedDate
-        };
+        return ToDto(entity);
     }
 
     public async Task UpdateAsync(PhoneNumberUpdateDto request, string userId, CancellationToken cancellationToken = default)
@@ -71,12 +70,16 @@ public class PhoneNumberService : IPhoneNumberService
         {
             entity.Status,
             entity.WhatsappStatus,
-            entity.Remark
+            entity.Remark,
+            entity.AgentName,
+            entity.Reference
         });
 
         entity.Status = request.Status;
         entity.WhatsappStatus = request.WhatsappStatus;
         entity.Remark = request.Remark;
+        entity.AgentName = request.AgentName;
+        entity.Reference = request.Reference;
         entity.ModifiedDate = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
 
@@ -86,7 +89,9 @@ public class PhoneNumberService : IPhoneNumberService
         {
             entity.Status,
             entity.WhatsappStatus,
-            entity.Remark
+            entity.Remark,
+            entity.AgentName,
+            entity.Reference
         });
 
         await _activityLogRepository.AddAsync(new ActivityLog
@@ -123,14 +128,14 @@ public class PhoneNumberService : IPhoneNumberService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string userId, CancellationToken cancellationToken = default)
+    public async Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string userId, CancellationToken cancellationToken = default)
     {
         var idList = ids.ToList();
         if (!idList.Any()) return;
 
         var records = await _phoneNumberRepository.GetByIdsAsync(idList, cancellationToken);
 
-        var oldValues = records.Select(r => new { r.Id, r.Status, r.WhatsappStatus }).ToList();
+        var oldValues = records.Select(r => new { r.Id, r.Status, r.WhatsappStatus, r.AgentName }).ToList();
 
         foreach (var record in records)
         {
@@ -138,6 +143,8 @@ public class PhoneNumberService : IPhoneNumberService
                 record.Status = status;
             if (!string.IsNullOrEmpty(whatsappStatus))
                 record.WhatsappStatus = whatsappStatus;
+            if (!string.IsNullOrEmpty(agentName))
+                record.AgentName = agentName;
             record.ModifiedDate = DateTime.UtcNow;
             record.UpdatedAt = DateTime.UtcNow;
             await _phoneNumberRepository.UpdateAsync(record, cancellationToken);
@@ -150,7 +157,7 @@ public class PhoneNumberService : IPhoneNumberService
             TargetType = "phone_numbers",
             TargetId = 0,
             OldValueJson = System.Text.Json.JsonSerializer.Serialize(oldValues),
-            NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ids = idList, status, whatsappStatus, count = idList.Count }),
+            NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ids = idList, status, whatsappStatus, agentName, count = idList.Count }),
             CreatedAt = DateTime.UtcNow
         }, cancellationToken);
 

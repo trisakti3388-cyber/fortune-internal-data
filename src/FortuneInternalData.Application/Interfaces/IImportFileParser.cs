@@ -11,4 +11,7 @@ public class ParsedImportRow
     public string? Seq { get; set; }
     public string? PhoneNumber { get; set; }
     public string? Remark { get; set; }
+    public string? WhatsappStatus { get; set; }
+    public string? AgentName { get; set; }
+    public string? Reference { get; set; }
 }

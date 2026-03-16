@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using ClosedXML.Excel;
 using FortuneInternalData.Application.DTOs;
 using FortuneInternalData.Application.Interfaces;
 using FortuneInternalData.Domain.Constants;
@@ -29,11 +30,72 @@ public class PhoneNumbersController : Controller
             filter.SearchPhoneNumber,
             filter.Status,
             filter.WhatsappStatus,
+            filter.SearchRemark,
+            filter.DateFrom,
+            filter.DateTo,
             filter.Page,
             filter.PageSize,
             cancellationToken);
 
         return View(filter);
+    }
+
+    [HttpGet]
+    [Authorize(Policy = PolicyNames.AdminOrAbove)]
+    public async Task<IActionResult> ExportSearch([FromQuery] PhoneNumberListViewModel filter, CancellationToken cancellationToken)
+    {
+        var items = await _phoneNumberService.SearchAllAsync(
+            filter.SearchPhoneNumber,
+            filter.Status,
+            filter.WhatsappStatus,
+            filter.SearchRemark,
+            filter.DateFrom,
+            filter.DateTo,
+            cancellationToken);
+
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("PhoneData");
+
+        // Headers
+        ws.Cell(1, 1).Value = "seq";
+        ws.Cell(1, 2).Value = "phone_number";
+        ws.Cell(1, 3).Value = "status";
+        ws.Cell(1, 4).Value = "whatsapp_status";
+        ws.Cell(1, 5).Value = "remark";
+        ws.Cell(1, 6).Value = "agent_name";
+        ws.Cell(1, 7).Value = "reference";
+        ws.Cell(1, 8).Value = "upload_date";
+        ws.Cell(1, 9).Value = "modified_date";
+
+        var headerRow = ws.Row(1);
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
+
+        int row = 2;
+        foreach (var item in items)
+        {
+            ws.Cell(row, 1).Value = item.Seq ?? string.Empty;
+            ws.Cell(row, 2).Value = item.PhoneNumber;
+            ws.Cell(row, 3).Value = item.Status;
+            ws.Cell(row, 4).Value = item.WhatsappStatus ?? string.Empty;
+            ws.Cell(row, 5).Value = item.Remark ?? string.Empty;
+            ws.Cell(row, 6).Value = item.AgentName ?? string.Empty;
+            ws.Cell(row, 7).Value = item.Reference ?? string.Empty;
+            ws.Cell(row, 8).Value = item.UploadDate.HasValue ? item.UploadDate.Value.AddHours(7).ToString("dd/MM/yyyy HH:mm:ss") : string.Empty;
+            ws.Cell(row, 9).Value = item.ModifiedDate.HasValue ? item.ModifiedDate.Value.AddHours(7).ToString("dd/MM/yyyy HH:mm:ss") : string.Empty;
+            row++;
+        }
+
+        ws.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        var fileName = $"phone_data_export_{DateTime.UtcNow.AddHours(7):yyyyMMdd_HHmmss}.xlsx";
+        return File(stream.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
     }
 
     [HttpGet]
@@ -48,7 +110,9 @@ public class PhoneNumbersController : Controller
             PhoneNumber = item.PhoneNumber,
             Status = item.Status,
             WhatsappStatus = item.WhatsappStatus,
-            Remark = item.Remark
+            Remark = item.Remark,
+            AgentName = item.AgentName,
+            Reference = item.Reference
         });
     }
 
@@ -66,7 +130,9 @@ public class PhoneNumbersController : Controller
             Id = model.Id,
             Status = model.Status,
             WhatsappStatus = model.WhatsappStatus,
-            Remark = model.Remark
+            Remark = model.Remark,
+            AgentName = model.AgentName,
+            Reference = model.Reference
         }, userId, cancellationToken);
 
         TempData["SuccessMessage"] = "Phone number record updated successfully.";
@@ -102,14 +168,14 @@ public class PhoneNumbersController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        if (string.IsNullOrEmpty(model.Status) && string.IsNullOrEmpty(model.WhatsappStatus))
+        if (string.IsNullOrEmpty(model.Status) && string.IsNullOrEmpty(model.WhatsappStatus) && string.IsNullOrEmpty(model.AgentName))
         {
             TempData["ErrorMessage"] = "Please select at least one field to update.";
             return RedirectToAction(nameof(Index));
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
-        await _phoneNumberService.BatchUpdateAsync(model.SelectedIds, model.Status, model.WhatsappStatus, userId, cancellationToken);
+        await _phoneNumberService.BatchUpdateAsync(model.SelectedIds, model.Status, model.WhatsappStatus, model.AgentName, userId, cancellationToken);
 
         TempData["SuccessMessage"] = $"{model.SelectedIds.Count} record(s) updated successfully.";
         return RedirectToAction(nameof(Index));

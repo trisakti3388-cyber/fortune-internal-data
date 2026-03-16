@@ -1,0 +1,97 @@
+@{
+    ViewData["Title"] = "Role Permissions";
+    var permissions = ViewBag.Permissions as IReadOnlyList<FortuneInternalData.Domain.Entities.RolePermission> ?? new List<FortuneInternalData.Domain.Entities.RolePermission>();
+    var modules = ViewBag.Modules as string[] ?? Array.Empty<string>();
+    var roles = ViewBag.Roles as string[] ?? Array.Empty<string>();
+
+    bool GetPerm(string role, string module, bool edit)
+    {
+        var p = permissions.FirstOrDefault(x => x.RoleId == role && x.Module == module);
+        return p != null && (edit ? p.CanEdit : p.CanView);
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-shield-check"></i> Role Permissions</h2>
+    <form method="post" asp-action="SeedDefaults">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-outline-secondary btn-sm"
+                onclick="return confirm('Reset to default permissions? This will overwrite current settings.')">
+            <i class="bi bi-arrow-clockwise"></i> Reset to Defaults
+        </button>
+    </form>
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i>
+    <strong>Superadmin</strong> always has full access to all modules (not configurable).
+    Configure permissions for Admin, Manager, and Staff roles below.
+</div>
+
+<div class="card stat-card">
+    <div class="card-body">
+        <form method="post" asp-action="Save">
+            @Html.AntiForgeryToken()
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Module</th>
+                            @foreach (var role in roles)
+                            {
+                                <th colspan="2" class="text-center">@role</th>
+                            }
+                        </tr>
+                        <tr>
+                            <th></th>
+                            @foreach (var role in roles)
+                            {
+                                <th class="text-center text-muted small bg-light">View</th>
+                                <th class="text-center text-muted small bg-light">Edit</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var module in modules)
+                        {
+                            <tr>
+                                <td class="fw-semibold">
+                                    @switch (module)
+                                    {
+                                        case "Dashboard": <text><i class="bi bi-speedometer2 text-primary"></i> Dashboard</text> break;
+                                        case "PhoneData": <text><i class="bi bi-telephone-fill text-success"></i> Phone Data</text> break;
+                                        case "Imports": <text><i class="bi bi-cloud-upload-fill text-warning"></i> Imports</text> break;
+                                        case "Users": <text><i class="bi bi-people-fill text-danger"></i> Users</text> break;
+                                        default: @module break;
+                                    }
+                                </td>
+                                @foreach (var role in roles)
+                                {
+                                    <td class="text-center">
+                                        <input type="checkbox"
+                                               name="perm_@(role)_@(module)_view"
+                                               class="form-check-input"
+                                               value="on"
+                                               @(GetPerm(role, module, false) ? "checked" : "") />
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="checkbox"
+                                               name="perm_@(role)_@(module)_edit"
+                                               class="form-check-input"
+                                               value="on"
+                                               @(GetPerm(role, module, true) ? "checked" : "") />
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Save Permissions
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
