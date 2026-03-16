@@ -37,6 +37,7 @@
                 <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-assigned" checked> Assigned To</label></li>
                 <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-upload" checked> Upload Date</label></li>
                 <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-modified" checked> Modified</label></li>
+                <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-countweb" checked> Count Web</label></li>
                 @if (isSuperadmin)
                 {
                     <li><hr class="dropdown-divider"></li>
@@ -165,6 +166,7 @@
                         <th class="col-assigned">Assigned To</th>
                         <th class="col-upload">Upload Date</th>
                         <th class="col-modified">Modified</th>
+                        <th class="col-countweb">Count Web</th>
                         @if (isSuperadmin)
                         {
                             for (int w = 1; w <= 10; w++)
@@ -207,6 +209,16 @@
                                 <td class="col-assigned">@(item.AssignedUserName ?? "")</td>
                                 <td class="col-upload text-muted small">@item.UploadDate.ToJakartaDisplay()</td>
                                 <td class="col-modified text-muted small">@item.ModifiedDate.ToJakartaDisplay()</td>
+                                <td class="col-countweb">
+                                    @if (item.CountWeb > 0)
+                                    {
+                                        <span class="badge bg-primary">@item.CountWeb</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0</span>
+                                    }
+                                </td>
                                 @if (isSuperadmin)
                                 {
                                     var webVals = new[] { item.Web1, item.Web2, item.Web3, item.Web4, item.Web5, item.Web6, item.Web7, item.Web8, item.Web9, item.Web10 };

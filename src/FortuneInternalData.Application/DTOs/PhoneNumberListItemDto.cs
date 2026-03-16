@@ -24,4 +24,8 @@ public class PhoneNumberListItemDto
     public string? Web10 { get; set; }
     public string? AssignedUserId { get; set; }
     public string? AssignedUserName { get; set; }
+
+    /// <summary>Computed: count of web1-web10 fields that are "YES".</summary>
+    public int CountWeb => new[] { Web1, Web2, Web3, Web4, Web5, Web6, Web7, Web8, Web9, Web10 }
+        .Count(w => "YES".Equals(w, StringComparison.OrdinalIgnoreCase));
 }
