@@ -194,10 +194,16 @@ public class ImportsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Confirm(ulong id, CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
-        await _importService.ConfirmImportAsync(id, userId, cancellationToken);
-
-        TempData["SuccessMessage"] = "Import confirmed. New records have been inserted.";
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+            await _importService.ConfirmImportAsync(id, userId, cancellationToken);
+            TempData["SuccessMessage"] = "Import confirmed. New records have been inserted.";
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = $"Confirm failed: {ex.Message}";
+        }
         return RedirectToAction(nameof(Detail), new { id });
     }
 
