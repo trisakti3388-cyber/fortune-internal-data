@@ -9,5 +9,5 @@ public interface IPhoneNumberService
     Task<PhoneNumberListItemDto?> GetByIdAsync(ulong id, CancellationToken cancellationToken = default);
     Task UpdateAsync(PhoneNumberUpdateDto request, string userId, CancellationToken cancellationToken = default);
     Task BatchDeleteAsync(IEnumerable<ulong> ids, string userId, CancellationToken cancellationToken = default);
-    Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string userId, CancellationToken cancellationToken = default);
+    Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string? remark, string? reference, string userId, CancellationToken cancellationToken = default);
 }

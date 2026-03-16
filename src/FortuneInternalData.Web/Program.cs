@@ -5,6 +5,7 @@ using FortuneInternalData.Web.Filters;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using FortuneInternalData.Application.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,9 +21,11 @@ builder.Services.Configure<FormOptions>(o =>
 });
 
 builder.Services.AddScoped<MustChangePasswordFilter>();
+builder.Services.AddScoped<PermissionAuthorizationFilter>();
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.AddService<MustChangePasswordFilter>();
+    options.Filters.AddService<PermissionAuthorizationFilter>();
 });
 builder.Services.AddFortuneInternalData(builder.Configuration);
 

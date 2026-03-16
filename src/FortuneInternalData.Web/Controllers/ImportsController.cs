@@ -8,24 +8,27 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FortuneInternalData.Web.Controllers;
 
-[Authorize(Policy = PolicyNames.ManagerOrAbove)]
+[Authorize]
 public class ImportsController : Controller
 {
     private readonly IImportService _importService;
     private readonly IImportQueryService _importQueryService;
     private readonly IFileStorageService _fileStorageService;
     private readonly IImportBackgroundQueue _backgroundQueue;
+    private readonly IPermissionService _permissionService;
 
     public ImportsController(
         IImportService importService,
         IImportQueryService importQueryService,
         IFileStorageService fileStorageService,
-        IImportBackgroundQueue backgroundQueue)
+        IImportBackgroundQueue backgroundQueue,
+        IPermissionService permissionService)
     {
         _importService = importService;
         _importQueryService = importQueryService;
         _fileStorageService = fileStorageService;
         _backgroundQueue = backgroundQueue;
+        _permissionService = permissionService;
     }
 
     [HttpGet]
@@ -39,14 +42,12 @@ public class ImportsController : Controller
         return View(model);
     }
 
-    [Authorize(Policy = PolicyNames.AdminOrAbove)]
     [HttpGet]
     public IActionResult Create()
     {
         return View(new UploadImportViewModel());
     }
 
-    [Authorize(Policy = PolicyNames.AdminOrAbove)]
     [HttpGet]
     public IActionResult DownloadTemplate()
     {
@@ -86,7 +87,6 @@ public class ImportsController : Controller
             "phone_import_template.xlsx");
     }
 
-    [Authorize(Policy = PolicyNames.AdminOrAbove)]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(UploadImportViewModel model, CancellationToken cancellationToken)
@@ -136,6 +136,10 @@ public class ImportsController : Controller
     [HttpGet]
     public async Task<IActionResult> ExportBatch(ulong id, CancellationToken cancellationToken)
     {
+        var roleName = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+        if (!await _permissionService.HasExportPermissionAsync(roleName, "Imports", cancellationToken))
+            return Forbid();
+
         var batch = await _importQueryService.GetBatchDetailAsync(id, 1, int.MaxValue, null, cancellationToken);
         if (batch is null)
             return NotFound();
@@ -189,7 +193,6 @@ public class ImportsController : Controller
         return Json(status);
     }
 
-    [Authorize(Policy = PolicyNames.AdminOrAbove)]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Confirm(ulong id, CancellationToken cancellationToken)
@@ -207,7 +210,6 @@ public class ImportsController : Controller
         return RedirectToAction(nameof(Detail), new { id });
     }
 
-    [Authorize(Policy = PolicyNames.AdminOrAbove)]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Cancel(ulong id, CancellationToken cancellationToken)

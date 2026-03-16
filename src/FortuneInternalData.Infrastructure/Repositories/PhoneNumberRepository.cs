@@ -57,7 +57,7 @@ public class PhoneNumberRepository : IPhoneNumberRepository
             query = query.Where(x => x.Status == status);
 
         if (!string.IsNullOrWhiteSpace(whatsappStatus))
-            query = query.Where(x => x.WhatsappStatus == whatsappStatus);
+            query = query.Where(x => x.WhatsappStatus != null && x.WhatsappStatus.Contains(whatsappStatus.Trim()));
 
         if (!string.IsNullOrWhiteSpace(remark))
             query = query.Where(x => x.Remark != null && x.Remark.Contains(remark.Trim()));

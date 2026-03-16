@@ -4,10 +4,16 @@
     var modules = ViewBag.Modules as string[] ?? Array.Empty<string>();
     var roles = ViewBag.Roles as string[] ?? Array.Empty<string>();
 
-    bool GetPerm(string role, string module, bool edit)
+    bool GetPerm(string role, string module, string type)
     {
         var p = permissions.FirstOrDefault(x => x.RoleId == role && x.Module == module);
-        return p != null && (edit ? p.CanEdit : p.CanView);
+        if (p == null) return false;
+        return type switch
+        {
+            "edit" => p.CanEdit,
+            "export" => p.CanExport,
+            _ => p.CanView
+        };
     }
 }
 
@@ -39,7 +45,7 @@
                             <th>Module</th>
                             @foreach (var role in roles)
                             {
-                                <th colspan="2" class="text-center">@role</th>
+                                <th colspan="3" class="text-center">@role</th>
                             }
                         </tr>
                         <tr>
@@ -48,6 +54,7 @@
                             {
                                 <th class="text-center text-muted small bg-light">View</th>
                                 <th class="text-center text-muted small bg-light">Edit</th>
+                                <th class="text-center text-muted small bg-light">Export</th>
                             }
                         </tr>
                     </thead>
@@ -72,14 +79,21 @@
                                                name="perm_@(role)_@(module)_view"
                                                class="form-check-input"
                                                value="on"
-                                               @(GetPerm(role, module, false) ? "checked" : "") />
+                                               @(GetPerm(role, module, "view") ? "checked" : "") />
                                     </td>
                                     <td class="text-center">
                                         <input type="checkbox"
                                                name="perm_@(role)_@(module)_edit"
                                                class="form-check-input"
                                                value="on"
-                                               @(GetPerm(role, module, true) ? "checked" : "") />
+                                               @(GetPerm(role, module, "edit") ? "checked" : "") />
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="checkbox"
+                                               name="perm_@(role)_@(module)_export"
+                                               class="form-check-input"
+                                               value="on"
+                                               @(GetPerm(role, module, "export") ? "checked" : "") />
                                     </td>
                                 }
                             </tr>

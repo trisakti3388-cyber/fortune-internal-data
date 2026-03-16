@@ -14,10 +14,12 @@ namespace FortuneInternalData.Web.Controllers;
 public class PhoneNumbersController : Controller
 {
     private readonly IPhoneNumberService _phoneNumberService;
+    private readonly IPermissionService _permissionService;
 
-    public PhoneNumbersController(IPhoneNumberService phoneNumberService)
+    public PhoneNumbersController(IPhoneNumberService phoneNumberService, IPermissionService permissionService)
     {
         _phoneNumberService = phoneNumberService;
+        _permissionService = permissionService;
     }
 
     [HttpGet]
@@ -41,9 +43,12 @@ public class PhoneNumbersController : Controller
     }
 
     [HttpGet]
-    [Authorize(Policy = PolicyNames.AdminOrAbove)]
     public async Task<IActionResult> ExportSearch([FromQuery] PhoneNumberListViewModel filter, CancellationToken cancellationToken)
     {
+        var roleName = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+        if (!await _permissionService.HasExportPermissionAsync(roleName, "PhoneData", cancellationToken))
+            return Forbid();
+
         var items = await _phoneNumberService.SearchAllAsync(
             filter.SearchPhoneNumber,
             filter.Status,
@@ -141,7 +146,6 @@ public class PhoneNumbersController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = PolicyNames.AdminOrAbove)]
     public async Task<IActionResult> BatchDelete(List<ulong> selectedIds, CancellationToken cancellationToken)
     {
         if (selectedIds == null || !selectedIds.Any())
@@ -159,7 +163,6 @@ public class PhoneNumbersController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Policy = PolicyNames.AdminOrAbove)]
     public async Task<IActionResult> BatchUpdate(BatchUpdateViewModel model, CancellationToken cancellationToken)
     {
         if (model.SelectedIds == null || !model.SelectedIds.Any())
@@ -168,14 +171,16 @@ public class PhoneNumbersController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        if (string.IsNullOrEmpty(model.Status) && string.IsNullOrEmpty(model.WhatsappStatus) && string.IsNullOrEmpty(model.AgentName))
+        if (string.IsNullOrEmpty(model.Status) && string.IsNullOrEmpty(model.WhatsappStatus)
+            && string.IsNullOrEmpty(model.AgentName) && string.IsNullOrEmpty(model.Remark)
+            && string.IsNullOrEmpty(model.Reference))
         {
             TempData["ErrorMessage"] = "Please select at least one field to update.";
             return RedirectToAction(nameof(Index));
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
-        await _phoneNumberService.BatchUpdateAsync(model.SelectedIds, model.Status, model.WhatsappStatus, model.AgentName, userId, cancellationToken);
+        await _phoneNumberService.BatchUpdateAsync(model.SelectedIds, model.Status, model.WhatsappStatus, model.AgentName, model.Remark, model.Reference, userId, cancellationToken);
 
         TempData["SuccessMessage"] = $"{model.SelectedIds.Count} record(s) updated successfully.";
         return RedirectToAction(nameof(Index));

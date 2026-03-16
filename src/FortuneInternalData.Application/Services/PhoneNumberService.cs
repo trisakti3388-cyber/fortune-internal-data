@@ -128,14 +128,14 @@ public class PhoneNumberService : IPhoneNumberService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string userId, CancellationToken cancellationToken = default)
+    public async Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string? remark, string? reference, string userId, CancellationToken cancellationToken = default)
     {
         var idList = ids.ToList();
         if (!idList.Any()) return;
 
         var records = await _phoneNumberRepository.GetByIdsAsync(idList, cancellationToken);
 
-        var oldValues = records.Select(r => new { r.Id, r.Status, r.WhatsappStatus, r.AgentName }).ToList();
+        var oldValues = records.Select(r => new { r.Id, r.Status, r.WhatsappStatus, r.AgentName, r.Remark, r.Reference }).ToList();
 
         foreach (var record in records)
         {
@@ -145,6 +145,10 @@ public class PhoneNumberService : IPhoneNumberService
                 record.WhatsappStatus = whatsappStatus;
             if (!string.IsNullOrEmpty(agentName))
                 record.AgentName = agentName;
+            if (!string.IsNullOrEmpty(remark))
+                record.Remark = remark;
+            if (!string.IsNullOrEmpty(reference))
+                record.Reference = reference;
             record.ModifiedDate = DateTime.UtcNow;
             record.UpdatedAt = DateTime.UtcNow;
             await _phoneNumberRepository.UpdateAsync(record, cancellationToken);
@@ -157,7 +161,7 @@ public class PhoneNumberService : IPhoneNumberService
             TargetType = "phone_numbers",
             TargetId = 0,
             OldValueJson = System.Text.Json.JsonSerializer.Serialize(oldValues),
-            NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ids = idList, status, whatsappStatus, agentName, count = idList.Count }),
+            NewValueJson = System.Text.Json.JsonSerializer.Serialize(new { ids = idList, status, whatsappStatus, agentName, remark, reference, count = idList.Count }),
             CreatedAt = DateTime.UtcNow
         }, cancellationToken);
 

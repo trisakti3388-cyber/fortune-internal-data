@@ -111,6 +111,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.Module).HasColumnName("module").HasMaxLength(50).IsRequired();
             entity.Property(x => x.CanView).HasColumnName("can_view").HasDefaultValue(false);
             entity.Property(x => x.CanEdit).HasColumnName("can_edit").HasDefaultValue(false);
+            entity.Property(x => x.CanExport).HasColumnName("can_export").HasDefaultValue(false);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             entity.HasIndex(x => new { x.RoleId, x.Module }).IsUnique();

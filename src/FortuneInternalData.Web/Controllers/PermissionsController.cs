@@ -43,13 +43,15 @@ public class PermissionsController : Controller
             {
                 var canView = form[$"perm_{role}_{module}_view"] == "on";
                 var canEdit = form[$"perm_{role}_{module}_edit"] == "on";
+                var canExport = form[$"perm_{role}_{module}_export"] == "on";
 
                 permissions.Add(new RolePermission
                 {
                     RoleId = role,
                     Module = module,
                     CanView = canView,
-                    CanEdit = canEdit
+                    CanEdit = canEdit,
+                    CanExport = canExport
                 });
             }
         }
@@ -65,23 +67,23 @@ public class PermissionsController : Controller
     {
         var defaults = new List<RolePermission>();
 
-        // Admin: all modules, view+edit
+        // Admin: all modules, view+edit+export
         foreach (var module in Modules)
         {
-            defaults.Add(new RolePermission { RoleId = Roles.Admin, Module = module, CanView = true, CanEdit = true });
+            defaults.Add(new RolePermission { RoleId = Roles.Admin, Module = module, CanView = true, CanEdit = true, CanExport = true });
         }
 
-        // Manager: PhoneData+Imports view+edit, Dashboard view
-        defaults.Add(new RolePermission { RoleId = Roles.Manager, Module = "Dashboard", CanView = true, CanEdit = false });
-        defaults.Add(new RolePermission { RoleId = Roles.Manager, Module = "PhoneData", CanView = true, CanEdit = true });
-        defaults.Add(new RolePermission { RoleId = Roles.Manager, Module = "Imports", CanView = true, CanEdit = true });
-        defaults.Add(new RolePermission { RoleId = Roles.Manager, Module = "Users", CanView = false, CanEdit = false });
+        // Manager: PhoneData+Imports view+edit+export, Dashboard view
+        defaults.Add(new RolePermission { RoleId = Roles.Manager, Module = "Dashboard", CanView = true, CanEdit = false, CanExport = false });
+        defaults.Add(new RolePermission { RoleId = Roles.Manager, Module = "PhoneData", CanView = true, CanEdit = true, CanExport = true });
+        defaults.Add(new RolePermission { RoleId = Roles.Manager, Module = "Imports", CanView = true, CanEdit = true, CanExport = true });
+        defaults.Add(new RolePermission { RoleId = Roles.Manager, Module = "Users", CanView = false, CanEdit = false, CanExport = false });
 
         // Staff: PhoneData view, Dashboard view
-        defaults.Add(new RolePermission { RoleId = Roles.Staff, Module = "Dashboard", CanView = true, CanEdit = false });
-        defaults.Add(new RolePermission { RoleId = Roles.Staff, Module = "PhoneData", CanView = true, CanEdit = false });
-        defaults.Add(new RolePermission { RoleId = Roles.Staff, Module = "Imports", CanView = false, CanEdit = false });
-        defaults.Add(new RolePermission { RoleId = Roles.Staff, Module = "Users", CanView = false, CanEdit = false });
+        defaults.Add(new RolePermission { RoleId = Roles.Staff, Module = "Dashboard", CanView = true, CanEdit = false, CanExport = false });
+        defaults.Add(new RolePermission { RoleId = Roles.Staff, Module = "PhoneData", CanView = true, CanEdit = false, CanExport = false });
+        defaults.Add(new RolePermission { RoleId = Roles.Staff, Module = "Imports", CanView = false, CanEdit = false, CanExport = false });
+        defaults.Add(new RolePermission { RoleId = Roles.Staff, Module = "Users", CanView = false, CanEdit = false, CanExport = false });
 
         await _permissionService.SavePermissionsAsync(defaults, cancellationToken);
         TempData["SuccessMessage"] = "Default permissions seeded successfully.";

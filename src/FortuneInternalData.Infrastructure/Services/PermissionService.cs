@@ -31,6 +31,18 @@ public class PermissionService : IPermissionService
         return requireEdit ? permission.CanEdit : permission.CanView;
     }
 
+    public async Task<bool> HasExportPermissionAsync(string roleName, string module, CancellationToken cancellationToken = default)
+    {
+        if (roleName == Roles.Superadmin)
+            return true;
+
+        var permission = await _dbContext.RolePermissions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.RoleId == roleName && p.Module == module, cancellationToken);
+
+        return permission?.CanExport ?? false;
+    }
+
     public async Task<IReadOnlyList<RolePermission>> GetAllPermissionsAsync(CancellationToken cancellationToken = default)
     {
         return await _dbContext.RolePermissions
