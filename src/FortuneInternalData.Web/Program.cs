@@ -1,7 +1,9 @@
+using FortuneInternalData.Domain.Entities;
 using FortuneInternalData.Infrastructure.Identity;
 using FortuneInternalData.Infrastructure.Persistence;
 using FortuneInternalData.Web.Extensions;
 using FortuneInternalData.Web.Filters;
+using FortuneInternalData.Web.Middleware;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -45,6 +47,20 @@ using (var scope = app.Services.CreateScope())
 
         var bootstrapService = services.GetRequiredService<IdentityBootstrapService>();
         await bootstrapService.EnsureSuperadminAsync();
+
+        // Seed initial allowed IPs if table is empty
+        var anyIps = await dbContext.AllowedIps.AnyAsync();
+        if (!anyIps)
+        {
+            var seedIps = new[]
+            {
+                new AllowedIp { IpAddress = "172.188.217.112", Description = "Seeded - server IP 1", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+                new AllowedIp { IpAddress = "52.237.88.249",   Description = "Seeded - server IP 2", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+                new AllowedIp { IpAddress = "20.6.33.33",      Description = "Seeded - server IP 3", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            };
+            dbContext.AllowedIps.AddRange(seedIps);
+            await dbContext.SaveChangesAsync();
+        }
     }
     catch (Exception ex)
     {
@@ -66,6 +82,10 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+// IP whitelist check BEFORE authentication
+app.UseMiddleware<IpWhitelistMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -16,6 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
     public DbSet<ImportBatchRow> ImportBatchRows => Set<ImportBatchRow>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<AllowedIp> AllowedIps => Set<AllowedIp>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +39,16 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.ModifiedDate).HasColumnName("modified_date");
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(x => x.Web1).HasColumnName("web1").HasMaxLength(3);
+            entity.Property(x => x.Web2).HasColumnName("web2").HasMaxLength(3);
+            entity.Property(x => x.Web3).HasColumnName("web3").HasMaxLength(3);
+            entity.Property(x => x.Web4).HasColumnName("web4").HasMaxLength(3);
+            entity.Property(x => x.Web5).HasColumnName("web5").HasMaxLength(3);
+            entity.Property(x => x.Web6).HasColumnName("web6").HasMaxLength(3);
+            entity.Property(x => x.Web7).HasColumnName("web7").HasMaxLength(3);
+            entity.Property(x => x.Web8).HasColumnName("web8").HasMaxLength(3);
+            entity.Property(x => x.Web9).HasColumnName("web9").HasMaxLength(3);
+            entity.Property(x => x.Web10).HasColumnName("web10").HasMaxLength(3);
         });
 
         modelBuilder.Entity<ImportBatch>(entity =>
@@ -49,6 +60,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.StoredFilePath).HasColumnName("stored_file_path").HasMaxLength(255);
             entity.Property(x => x.UploadedByUserId).HasColumnName("uploaded_by_user_id").HasMaxLength(450).IsRequired();
             entity.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).IsRequired();
+            entity.Property(x => x.BatchType).HasColumnName("batch_type").HasMaxLength(20).IsRequired().HasDefaultValue("import");
             entity.Property(x => x.TotalRows).HasColumnName("total_rows");
             entity.Property(x => x.NewRows).HasColumnName("new_rows");
             entity.Property(x => x.ExistingRows).HasColumnName("existing_rows");
@@ -75,6 +87,17 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.Reference).HasColumnName("reference").HasMaxLength(255);
             entity.Property(x => x.RowStatus).HasColumnName("row_status").HasMaxLength(30).IsRequired();
             entity.Property(x => x.Message).HasColumnName("message").HasMaxLength(255);
+            entity.Property(x => x.UpdateStatus).HasColumnName("update_status").HasMaxLength(20);
+            entity.Property(x => x.Web1).HasColumnName("web1").HasMaxLength(3);
+            entity.Property(x => x.Web2).HasColumnName("web2").HasMaxLength(3);
+            entity.Property(x => x.Web3).HasColumnName("web3").HasMaxLength(3);
+            entity.Property(x => x.Web4).HasColumnName("web4").HasMaxLength(3);
+            entity.Property(x => x.Web5).HasColumnName("web5").HasMaxLength(3);
+            entity.Property(x => x.Web6).HasColumnName("web6").HasMaxLength(3);
+            entity.Property(x => x.Web7).HasColumnName("web7").HasMaxLength(3);
+            entity.Property(x => x.Web8).HasColumnName("web8").HasMaxLength(3);
+            entity.Property(x => x.Web9).HasColumnName("web9").HasMaxLength(3);
+            entity.Property(x => x.Web10).HasColumnName("web10").HasMaxLength(3);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
@@ -115,6 +138,18 @@ public class ApplicationDbContext : IdentityDbContext<IdentityApplicationUser>
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             entity.HasIndex(x => new { x.RoleId, x.Module }).IsUnique();
+        });
+
+        modelBuilder.Entity<AllowedIp>(entity =>
+        {
+            entity.ToTable("allowed_ips");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(x => x.IpAddress).HasColumnName("ip_address").HasMaxLength(45).IsRequired();
+            entity.Property(x => x.Description).HasColumnName("description").HasMaxLength(255);
+            entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            entity.HasIndex(x => x.IpAddress).IsUnique();
         });
     }
 }

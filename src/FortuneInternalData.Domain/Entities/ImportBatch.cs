@@ -11,6 +11,7 @@ public class ImportBatch : BaseEntity
     public int InvalidRows { get; set; }
     public int DuplicateRows { get; set; }
     public string Status { get; set; } = "pending";
+    public string BatchType { get; set; } = "import"; // import, update, delete, web_status
     public int ProcessedRows { get; set; }
     public string? ErrorMessage { get; set; }
 }

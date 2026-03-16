@@ -12,4 +12,5 @@ public class ImportBatchListItemDto
     public int ExistingRows { get; set; }
     public int InvalidRows { get; set; }
     public int DuplicateRows { get; set; }
+    public string BatchType { get; set; } = "import";
 }

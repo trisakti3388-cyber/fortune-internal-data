@@ -31,7 +31,9 @@ public class PhoneNumberService : IPhoneNumberService
         AgentName = x.AgentName,
         Reference = x.Reference,
         UploadDate = x.UploadDate,
-        ModifiedDate = x.ModifiedDate
+        ModifiedDate = x.ModifiedDate,
+        Web1 = x.Web1, Web2 = x.Web2, Web3 = x.Web3, Web4 = x.Web4, Web5 = x.Web5,
+        Web6 = x.Web6, Web7 = x.Web7, Web8 = x.Web8, Web9 = x.Web9, Web10 = x.Web10
     };
 
     public async Task<PagedResultDto<PhoneNumberListItemDto>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, int page, int pageSize, CancellationToken cancellationToken = default)
@@ -72,7 +74,9 @@ public class PhoneNumberService : IPhoneNumberService
             entity.WhatsappStatus,
             entity.Remark,
             entity.AgentName,
-            entity.Reference
+            entity.Reference,
+            entity.Web1, entity.Web2, entity.Web3, entity.Web4, entity.Web5,
+            entity.Web6, entity.Web7, entity.Web8, entity.Web9, entity.Web10
         });
 
         entity.Status = request.Status;
@@ -80,6 +84,16 @@ public class PhoneNumberService : IPhoneNumberService
         entity.Remark = request.Remark;
         entity.AgentName = request.AgentName;
         entity.Reference = request.Reference;
+        entity.Web1 = request.Web1;
+        entity.Web2 = request.Web2;
+        entity.Web3 = request.Web3;
+        entity.Web4 = request.Web4;
+        entity.Web5 = request.Web5;
+        entity.Web6 = request.Web6;
+        entity.Web7 = request.Web7;
+        entity.Web8 = request.Web8;
+        entity.Web9 = request.Web9;
+        entity.Web10 = request.Web10;
         entity.ModifiedDate = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
 
@@ -91,7 +105,9 @@ public class PhoneNumberService : IPhoneNumberService
             entity.WhatsappStatus,
             entity.Remark,
             entity.AgentName,
-            entity.Reference
+            entity.Reference,
+            entity.Web1, entity.Web2, entity.Web3, entity.Web4, entity.Web5,
+            entity.Web6, entity.Web7, entity.Web8, entity.Web9, entity.Web10
         });
 
         await _activityLogRepository.AddAsync(new ActivityLog
@@ -128,7 +144,9 @@ public class PhoneNumberService : IPhoneNumberService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string? remark, string? reference, string userId, CancellationToken cancellationToken = default)
+    public async Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string? remark, string? reference,
+        string? web1, string? web2, string? web3, string? web4, string? web5, string? web6, string? web7, string? web8, string? web9, string? web10,
+        string userId, CancellationToken cancellationToken = default)
     {
         var idList = ids.ToList();
         if (!idList.Any()) return;
@@ -139,16 +157,21 @@ public class PhoneNumberService : IPhoneNumberService
 
         foreach (var record in records)
         {
-            if (!string.IsNullOrEmpty(status))
-                record.Status = status;
-            if (!string.IsNullOrEmpty(whatsappStatus))
-                record.WhatsappStatus = whatsappStatus;
-            if (!string.IsNullOrEmpty(agentName))
-                record.AgentName = agentName;
-            if (!string.IsNullOrEmpty(remark))
-                record.Remark = remark;
-            if (!string.IsNullOrEmpty(reference))
-                record.Reference = reference;
+            if (!string.IsNullOrEmpty(status)) record.Status = status;
+            if (!string.IsNullOrEmpty(whatsappStatus)) record.WhatsappStatus = whatsappStatus;
+            if (!string.IsNullOrEmpty(agentName)) record.AgentName = agentName;
+            if (!string.IsNullOrEmpty(remark)) record.Remark = remark;
+            if (!string.IsNullOrEmpty(reference)) record.Reference = reference;
+            if (!string.IsNullOrEmpty(web1)) record.Web1 = web1;
+            if (!string.IsNullOrEmpty(web2)) record.Web2 = web2;
+            if (!string.IsNullOrEmpty(web3)) record.Web3 = web3;
+            if (!string.IsNullOrEmpty(web4)) record.Web4 = web4;
+            if (!string.IsNullOrEmpty(web5)) record.Web5 = web5;
+            if (!string.IsNullOrEmpty(web6)) record.Web6 = web6;
+            if (!string.IsNullOrEmpty(web7)) record.Web7 = web7;
+            if (!string.IsNullOrEmpty(web8)) record.Web8 = web8;
+            if (!string.IsNullOrEmpty(web9)) record.Web9 = web9;
+            if (!string.IsNullOrEmpty(web10)) record.Web10 = web10;
             record.ModifiedDate = DateTime.UtcNow;
             record.UpdatedAt = DateTime.UtcNow;
             await _phoneNumberRepository.UpdateAsync(record, cancellationToken);

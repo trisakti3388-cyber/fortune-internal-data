@@ -15,4 +15,5 @@ public class ImportBatchDetailDto
     public int PageSize { get; set; } = 100;
     public int TotalRowCount { get; set; }
     public string? StatusFilter { get; set; }
+    public string BatchType { get; set; } = "import";
 }

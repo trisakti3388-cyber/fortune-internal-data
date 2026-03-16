@@ -1,0 +1,45 @@
+@model FortuneInternalData.Web.ViewModels.UploadImportViewModel
+@{
+    ViewData["Title"] = "Web Status Import";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card stat-card">
+            <div class="card-header bg-white">
+                <h4 class="mb-0"><i class="bi bi-globe text-info"></i> Web Status Import</h4>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <strong>Web Status Import</strong> — Upload a CSV or XLSX file with a <code>phone_number</code> column
+                    and any of the web columns (<code>web1</code>–<code>web10</code>).
+                    Only the web status fields will be updated for matching phone numbers.
+                    Only <code>YES</code> or <code>NO</code> values are accepted.
+                </div>
+
+                <form method="post" enctype="multipart/form-data" asp-action="CreateWebStatus">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="alert alert-danger" style="display: @(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Select File</label>
+                        <input asp-for="File" type="file" class="form-control" accept=".csv,.xlsx" />
+                        <div class="form-text">
+                            Accepted: CSV (.csv) or Excel (.xlsx).<br/>
+                            Required: <code>phone_number</code> + at least one of <code>web1</code>–<code>web10</code>
+                        </div>
+                        <span asp-validation-for="File" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-info fw-bold text-white">
+                            <i class="bi bi-cloud-upload"></i> Upload &amp; Process
+                        </button>
+                        <a href="/Imports" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

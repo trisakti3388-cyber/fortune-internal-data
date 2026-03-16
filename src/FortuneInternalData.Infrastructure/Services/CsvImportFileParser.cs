@@ -76,24 +76,41 @@ public class CsvImportFileParser : IImportFileParser
 
     private static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
+    private static string? GetField(CsvReader csv, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            try { return csv.GetField(name); } catch { }
+        }
+        return null;
+    }
+
     private static ParsedImportRow? ReadRow(CsvReader csv)
     {
-        var phoneNumber = csv.GetField("phone_number")
-                          ?? csv.GetField("phonenumber")
-                          ?? csv.GetField("phone")
-                          ?? string.Empty;
+        var phoneNumber = GetField(csv, "phone_number", "phonenumber", "phone") ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(phoneNumber))
             return null;
 
         return new ParsedImportRow
         {
-            Seq = csv.GetField("seq") ?? csv.GetField("no") ?? null,
+            Seq = GetField(csv, "seq", "no"),
             PhoneNumber = phoneNumber.Trim(),
-            Remark = csv.GetField("remark") ?? csv.GetField("remarks") ?? null,
-            WhatsappStatus = NullIfEmpty(csv.GetField("whatsapp_status")),
-            AgentName = NullIfEmpty(csv.GetField("agent_name")),
-            Reference = NullIfEmpty(csv.GetField("reference")),
+            Remark = GetField(csv, "remark", "remarks"),
+            WhatsappStatus = NullIfEmpty(GetField(csv, "whatsapp_status")),
+            AgentName = NullIfEmpty(GetField(csv, "agent_name")),
+            Reference = NullIfEmpty(GetField(csv, "reference")),
+            UpdateStatus = NullIfEmpty(GetField(csv, "status")),
+            Web1 = NullIfEmpty(GetField(csv, "web1")),
+            Web2 = NullIfEmpty(GetField(csv, "web2")),
+            Web3 = NullIfEmpty(GetField(csv, "web3")),
+            Web4 = NullIfEmpty(GetField(csv, "web4")),
+            Web5 = NullIfEmpty(GetField(csv, "web5")),
+            Web6 = NullIfEmpty(GetField(csv, "web6")),
+            Web7 = NullIfEmpty(GetField(csv, "web7")),
+            Web8 = NullIfEmpty(GetField(csv, "web8")),
+            Web9 = NullIfEmpty(GetField(csv, "web9")),
+            Web10 = NullIfEmpty(GetField(csv, "web10")),
         };
     }
 }

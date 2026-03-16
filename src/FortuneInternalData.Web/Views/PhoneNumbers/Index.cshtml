@@ -8,6 +8,7 @@
     ViewData["Title"] = "Phone Data";
     var totalPages = Model.Result.TotalCount > 0 ? (int)Math.Ceiling((double)Model.Result.TotalCount / Model.PageSize) : 1;
     var isAdminOrAbove = (await AuthorizationService.AuthorizeAsync(User, FortuneInternalData.Web.Security.PolicyNames.AdminOrAbove)).Succeeded;
+    var isSuperadmin = User.IsInRole("Superadmin");
     var dateFromStr = Model.DateFrom.HasValue ? Model.DateFrom.Value.ToString("yyyy-MM-dd") : "";
     var dateToStr = Model.DateTo.HasValue ? Model.DateTo.Value.ToString("yyyy-MM-dd") : "";
 
@@ -17,7 +18,34 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-telephone-fill"></i> Phone Data</h2>
-    <span class="text-muted">@Model.Result.TotalCount.ToString("N0") records</span>
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-muted">@Model.Result.TotalCount.ToString("N0") records</span>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="colToggleBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-layout-three-columns"></i> Columns
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end p-2" id="colToggleMenu" style="min-width:200px;" onclick="event.stopPropagation()">
+                <li><h6 class="dropdown-header">Toggle Columns</h6></li>
+                <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-seq" checked> Seq</label></li>
+                <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-status" checked> Status</label></li>
+                <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-whatsapp" checked> WhatsApp</label></li>
+                <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-remark" checked> Remark</label></li>
+                <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-agent" checked> Agent Name</label></li>
+                <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-reference" checked> Reference</label></li>
+                <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-upload" checked> Upload Date</label></li>
+                <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-modified" checked> Modified</label></li>
+                @if (isSuperadmin)
+                {
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header">Web Fields</h6></li>
+                    for (int w = 1; w <= 10; w++)
+                    {
+                        <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-web@(w)"> web@(w)</label></li>
+                    }
+                }
+            </ul>
+        </div>
+    </div>
 </div>
 
 <div class="card stat-card mb-4">
@@ -108,15 +136,22 @@
                             </th>
                         }
                         <th>#</th>
-                        <th>Seq</th>
+                        <th class="col-seq">Seq</th>
                         <th>Phone Number</th>
-                        <th>Status</th>
-                        <th>WhatsApp</th>
-                        <th>Remark</th>
-                        <th>Agent Name</th>
-                        <th>Reference</th>
-                        <th>Upload Date</th>
-                        <th>Modified</th>
+                        <th class="col-status">Status</th>
+                        <th class="col-whatsapp">WhatsApp</th>
+                        <th class="col-remark">Remark</th>
+                        <th class="col-agent">Agent Name</th>
+                        <th class="col-reference">Reference</th>
+                        <th class="col-upload">Upload Date</th>
+                        <th class="col-modified">Modified</th>
+                        @if (isSuperadmin)
+                        {
+                            for (int w = 1; w <= 10; w++)
+                            {
+                                <th class="col-web@(w)" style="display:none">web@(w)</th>
+                            }
+                        }
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -135,22 +170,40 @@
                                     </td>
                                 }
                                 <td class="text-muted">@idx</td>
-                                <td>@item.Seq</td>
+                                <td class="col-seq">@item.Seq</td>
                                 <td><code>@item.PhoneNumber</code></td>
-                                <td>
+                                <td class="col-status">
                                     <span class="badge @(item.Status == "active" ? "bg-success" : "bg-secondary")">@item.Status</span>
                                 </td>
-                                <td>
+                                <td class="col-whatsapp">
                                     @if (!string.IsNullOrEmpty(item.WhatsappStatus))
                                     {
                                         <span class="badge bg-info text-dark">@item.WhatsappStatus</span>
                                     }
                                 </td>
-                                <td>@(item.Remark != null && item.Remark.Length > 30 ? item.Remark[..30] + "..." : item.Remark)</td>
-                                <td>@item.AgentName</td>
-                                <td>@item.Reference</td>
-                                <td class="text-muted small">@item.UploadDate.ToJakartaDisplay()</td>
-                                <td class="text-muted small">@item.ModifiedDate.ToJakartaDisplay()</td>
+                                <td class="col-remark">@(item.Remark != null && item.Remark.Length > 30 ? item.Remark[..30] + "..." : item.Remark)</td>
+                                <td class="col-agent">@item.AgentName</td>
+                                <td class="col-reference">@item.Reference</td>
+                                <td class="col-upload text-muted small">@item.UploadDate.ToJakartaDisplay()</td>
+                                <td class="col-modified text-muted small">@item.ModifiedDate.ToJakartaDisplay()</td>
+                                @if (isSuperadmin)
+                                {
+                                    var webVals = new[] { item.Web1, item.Web2, item.Web3, item.Web4, item.Web5, item.Web6, item.Web7, item.Web8, item.Web9, item.Web10 };
+                                    for (int w = 1; w <= 10; w++)
+                                    {
+                                        var val = webVals[w - 1];
+                                        <td class="col-web@(w)" style="display:none">
+                                            @if (val?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true)
+                                            {
+                                                <span class="badge bg-success">YES</span>
+                                            }
+                                            else if (val?.Equals("NO", StringComparison.OrdinalIgnoreCase) == true)
+                                            {
+                                                <span class="badge bg-secondary">NO</span>
+                                            }
+                                        </td>
+                                    }
+                                }
                                 <td>
                                     <a href="/PhoneNumbers/Edit/@item.Id" class="btn btn-outline-primary btn-sm">
                                         <i class="bi bi-pencil"></i> Edit
@@ -161,7 +214,8 @@
                     }
                     else
                     {
-                        <tr><td colspan="@(isAdminOrAbove ? 12 : 11)" class="text-center text-muted py-4">No records found.</td></tr>
+                        var colCount = (isAdminOrAbove ? 1 : 0) + 11 + (isSuperadmin ? 10 : 0);
+                        <tr><td colspan="@colCount" class="text-center text-muted py-4">No records found.</td></tr>
                     }
                 </tbody>
             </table>
@@ -176,7 +230,6 @@
             <span class="text-muted small me-2">Page @Model.Page of @totalPages</span>
             <nav>
                 <ul class="pagination mb-0">
-                    @* First page *@
                     @if (Model.Page > 1)
                     {
                         <li class="page-item">
@@ -203,7 +256,6 @@
                     }
                 </ul>
             </nav>
-            @* Go to page *@
             <div class="d-flex align-items-center gap-1 ms-2">
                 <span class="text-muted small">Go to:</span>
                 <input type="number" id="goToPageInput" class="form-control form-control-sm" style="width:70px"
@@ -216,13 +268,11 @@
 
 @if (isAdminOrAbove)
 {
-    @* Batch Delete hidden form *@
     <form method="post" asp-action="BatchDelete" id="batchDeleteForm" style="display:none">
         @Html.AntiForgeryToken()
         <div id="batchDeleteIds"></div>
     </form>
 
-    @* Batch Update Modal *@
     <div class="modal fade" id="batchUpdateModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -261,17 +311,14 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Agent Name</label>
                             <input type="text" name="AgentName" class="form-control" placeholder="-- Keep existing --" maxlength="100" />
-                            <div class="form-text">Set agent name for all selected records</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Remark</label>
                             <input type="text" name="Remark" class="form-control" placeholder="-- Keep existing --" />
-                            <div class="form-text">Set remark for all selected records</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Reference</label>
                             <input type="text" name="Reference" class="form-control" placeholder="-- Keep existing --" maxlength="255" />
-                            <div class="form-text">Set reference for all selected records</div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -286,7 +333,44 @@
 
 @section Scripts {
     <script>
-        // Build export URL from current search form
+        // Column visibility with localStorage persistence
+        const STORAGE_KEY = 'phoneColVisibility';
+
+        function getColPrefs() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+        }
+
+        function saveColPref(col, visible) {
+            var prefs = getColPrefs();
+            prefs[col] = visible;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        }
+
+        function applyColVisibility(col, visible) {
+            var cells = document.querySelectorAll('.' + col);
+            cells.forEach(function (cell) {
+                cell.style.display = visible ? '' : 'none';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var prefs = getColPrefs();
+            document.querySelectorAll('.col-toggle').forEach(function (cb) {
+                var col = cb.dataset.col;
+                // Default: web columns hidden, others shown
+                var defaultVisible = !col.startsWith('col-web');
+                var visible = prefs.hasOwnProperty(col) ? prefs[col] : defaultVisible;
+                cb.checked = visible;
+                applyColVisibility(col, visible);
+
+                cb.addEventListener('change', function () {
+                    saveColPref(col, this.checked);
+                    applyColVisibility(col, this.checked);
+                });
+            });
+        });
+
+        // Export
         document.getElementById('exportSearchBtn')?.addEventListener('click', function (e) {
             e.preventDefault();
             var form = document.getElementById('searchForm');
@@ -327,11 +411,8 @@
 
             document.querySelectorAll('.row-check').forEach(function (cb) {
                 cb.addEventListener('change', function () {
-                    if (this.checked) {
-                        selectedIds.add(this.value);
-                    } else {
-                        selectedIds.delete(this.value);
-                    }
+                    if (this.checked) selectedIds.add(this.value);
+                    else selectedIds.delete(this.value);
                     updateBatchButtons();
                 });
             });
@@ -340,11 +421,8 @@
                 var checked = this.checked;
                 document.querySelectorAll('.row-check').forEach(function (cb) {
                     cb.checked = checked;
-                    if (checked) {
-                        selectedIds.add(cb.value);
-                    } else {
-                        selectedIds.delete(cb.value);
-                    }
+                    if (checked) selectedIds.add(cb.value);
+                    else selectedIds.delete(cb.value);
                 });
                 updateBatchButtons();
             });
@@ -352,7 +430,6 @@
             function submitBatchDelete() {
                 if (selectedIds.size === 0) return;
                 if (!confirm('Delete ' + selectedIds.size + ' selected record(s)? This cannot be undone.')) return;
-
                 var form = document.getElementById('batchDeleteForm');
                 var container = document.getElementById('batchDeleteIds');
                 container.innerHTML = '';

@@ -8,7 +8,12 @@
     <h2><i class="bi bi-clock-history"></i> Import History</h2>
     @if (User.IsInRole("Superadmin") || User.IsInRole("Admin"))
     {
-        <a href="/Imports/Create" class="btn btn-primary"><i class="bi bi-upload"></i> Upload New File</a>
+        <div class="d-flex gap-2">
+            <a href="/Imports/Create" class="btn btn-primary"><i class="bi bi-upload"></i> Upload Import</a>
+            <a href="/Imports/CreateUpdate" class="btn btn-warning"><i class="bi bi-arrow-repeat"></i> Update Import</a>
+            <a href="/Imports/CreateDelete" class="btn btn-danger"><i class="bi bi-trash"></i> Delete Import</a>
+            <a href="/Imports/CreateWebStatus" class="btn btn-info text-white"><i class="bi bi-globe"></i> Web Status</a>
+        </div>
     }
 </div>
 
@@ -19,6 +24,7 @@
                 <tr>
                     <th>#</th>
                     <th>File Name</th>
+                    <th>Type</th>
                     <th>Uploaded By</th>
                     <th>Status</th>
                     <th>Total</th>
@@ -35,9 +41,28 @@
                 {
                     foreach (var item in Model.Items)
                     {
+                        var typeBadge = item.BatchType switch
+                        {
+                            "update" => "bg-warning text-dark",
+                            "delete" => "bg-danger",
+                            "web_status" => "bg-info text-dark",
+                            _ => "bg-primary"
+                        };
+                        var typeIcon = item.BatchType switch
+                        {
+                            "update" => "bi-arrow-repeat",
+                            "delete" => "bi-trash",
+                            "web_status" => "bi-globe",
+                            _ => "bi-upload"
+                        };
                         <tr>
                             <td>@item.Id</td>
                             <td>@item.FileName</td>
+                            <td>
+                                <span class="badge @typeBadge">
+                                    <i class="bi @typeIcon"></i> @item.BatchType
+                                </span>
+                            </td>
                             <td>@item.UploadedByName</td>
                             <td><span class="badge badge-@item.Status">@item.Status</span></td>
                             <td>@item.TotalRows</td>
@@ -56,7 +81,7 @@
                 }
                 else
                 {
-                    <tr><td colspan="11" class="text-center text-muted py-4">No import history found.</td></tr>
+                    <tr><td colspan="12" class="text-center text-muted py-4">No import history found.</td></tr>
                 }
             </tbody>
         </table>

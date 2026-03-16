@@ -1,0 +1,96 @@
+@model List<FortuneInternalData.Domain.Entities.AllowedIp>
+@using FortuneInternalData.Web.Extensions
+@{
+    ViewData["Title"] = "IP Whitelist";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-shield-lock-fill"></i> IP Whitelist</h2>
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-info-circle-fill"></i>
+    When the whitelist is <strong>empty</strong>, all IP addresses are allowed.
+    Once any IP is added, only listed IPs (plus localhost) can access the application.
+    Localhost (<code>127.0.0.1</code>, <code>::1</code>) is always allowed.
+</div>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card stat-card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle-fill text-success"></i> Add IP Address</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="/Admin/IpWhitelist/Create">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">IP Address <span class="text-danger">*</span></label>
+                        <input type="text" name="ipAddress" class="form-control font-monospace"
+                               placeholder="e.g. 192.168.1.100" required maxlength="45" />
+                        <div class="form-text">IPv4 or IPv6 address</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <input type="text" name="description" class="form-control"
+                               placeholder="e.g. Office IP" maxlength="255" />
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-plus-lg"></i> Add to Whitelist
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card stat-card">
+            <div class="card-header bg-white d-flex justify-content-between">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Allowed IPs</h5>
+                <span class="badge bg-primary">@Model.Count entries</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>IP Address</th>
+                            <th>Description</th>
+                            <th>Added</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            foreach (var ip in Model)
+                            {
+                                <tr>
+                                    <td><code class="fs-6">@ip.IpAddress</code></td>
+                                    <td class="text-muted">@(ip.Description ?? "—")</td>
+                                    <td class="text-muted small">@ip.CreatedAt.ToJakartaDisplay()</td>
+                                    <td>
+                                        <form method="post" action="/Admin/IpWhitelist/Delete/@ip.Id"
+                                              onsubmit="return confirm('Remove @ip.IpAddress from whitelist?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="bi bi-info-circle"></i> No IPs in whitelist — all traffic is currently allowed.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

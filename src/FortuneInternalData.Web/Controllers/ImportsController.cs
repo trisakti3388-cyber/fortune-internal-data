@@ -220,4 +220,106 @@ public class ImportsController : Controller
         TempData["SuccessMessage"] = "Import has been cancelled.";
         return RedirectToAction(nameof(Detail), new { id });
     }
+
+    // ── Update Import ────────────────────────────────────────────────────────
+
+    [HttpGet]
+    public IActionResult CreateUpdate()
+    {
+        return View(new UploadImportViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateUpdate(UploadImportViewModel model, CancellationToken cancellationToken)
+    {
+        if (model.File is null || model.File.Length == 0)
+        {
+            ModelState.AddModelError(nameof(model.File), "Please choose a file.");
+            return View(model);
+        }
+
+        var ext = Path.GetExtension(model.File.FileName).ToLowerInvariant();
+        if (ext != ".csv" && ext != ".xlsx")
+        {
+            ModelState.AddModelError(nameof(model.File), "Only CSV and XLSX files are supported.");
+            return View(model);
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+        await using var stream = model.File.OpenReadStream();
+        var storedFilePath = await _fileStorageService.SaveAsync(stream, model.File.FileName, cancellationToken);
+        var batchId = await _importService.CreatePendingBatchAsync(storedFilePath, model.File.FileName, userId, "update", cancellationToken);
+        _backgroundQueue.Enqueue(batchId);
+
+        return RedirectToAction(nameof(Detail), new { id = batchId });
+    }
+
+    // ── Delete Import ────────────────────────────────────────────────────────
+
+    [HttpGet]
+    public IActionResult CreateDelete()
+    {
+        return View(new UploadImportViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateDelete(UploadImportViewModel model, CancellationToken cancellationToken)
+    {
+        if (model.File is null || model.File.Length == 0)
+        {
+            ModelState.AddModelError(nameof(model.File), "Please choose a file.");
+            return View(model);
+        }
+
+        var ext = Path.GetExtension(model.File.FileName).ToLowerInvariant();
+        if (ext != ".csv" && ext != ".xlsx")
+        {
+            ModelState.AddModelError(nameof(model.File), "Only CSV and XLSX files are supported.");
+            return View(model);
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+        await using var stream = model.File.OpenReadStream();
+        var storedFilePath = await _fileStorageService.SaveAsync(stream, model.File.FileName, cancellationToken);
+        var batchId = await _importService.CreatePendingBatchAsync(storedFilePath, model.File.FileName, userId, "delete", cancellationToken);
+        _backgroundQueue.Enqueue(batchId);
+
+        return RedirectToAction(nameof(Detail), new { id = batchId });
+    }
+
+    // ── Web Status Import ────────────────────────────────────────────────────
+
+    [HttpGet]
+    public IActionResult CreateWebStatus()
+    {
+        return View(new UploadImportViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateWebStatus(UploadImportViewModel model, CancellationToken cancellationToken)
+    {
+        if (model.File is null || model.File.Length == 0)
+        {
+            ModelState.AddModelError(nameof(model.File), "Please choose a file.");
+            return View(model);
+        }
+
+        var ext = Path.GetExtension(model.File.FileName).ToLowerInvariant();
+        if (ext != ".csv" && ext != ".xlsx")
+        {
+            ModelState.AddModelError(nameof(model.File), "Only CSV and XLSX files are supported.");
+            return View(model);
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+        await using var stream = model.File.OpenReadStream();
+        var storedFilePath = await _fileStorageService.SaveAsync(stream, model.File.FileName, cancellationToken);
+        var batchId = await _importService.CreatePendingBatchAsync(storedFilePath, model.File.FileName, userId, "web_status", cancellationToken);
+        _backgroundQueue.Enqueue(batchId);
+
+        return RedirectToAction(nameof(Detail), new { id = batchId });
+    }
 }

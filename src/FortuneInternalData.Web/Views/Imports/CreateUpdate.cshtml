@@ -1,0 +1,44 @@
+@model FortuneInternalData.Web.ViewModels.UploadImportViewModel
+@{
+    ViewData["Title"] = "Update Import";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card stat-card">
+            <div class="card-header bg-white">
+                <h4 class="mb-0"><i class="bi bi-arrow-repeat text-warning"></i> Update Import</h4>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <strong>Update Import</strong> — Upload a CSV or XLSX file with a <code>phone_number</code> column.
+                    Existing records matching those phone numbers will be updated with the values from the file.
+                    Records not found in the database will be skipped.
+                </div>
+
+                <form method="post" enctype="multipart/form-data" asp-action="CreateUpdate">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="alert alert-danger" style="display: @(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Select File</label>
+                        <input asp-for="File" type="file" class="form-control" accept=".csv,.xlsx" />
+                        <div class="form-text">Accepted: CSV (.csv) or Excel (.xlsx). Required column: <code>phone_number</code></div>
+                        <span asp-validation-for="File" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-warning fw-bold">
+                            <i class="bi bi-cloud-upload"></i> Upload &amp; Process
+                        </button>
+                        <a href="/Imports" class="btn btn-outline-secondary">Cancel</a>
+                        <a href="/Imports/DownloadTemplate" class="btn btn-outline-secondary ms-auto">
+                            <i class="bi bi-download"></i> Download Template
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

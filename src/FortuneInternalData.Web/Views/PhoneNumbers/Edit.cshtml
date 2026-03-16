@@ -3,6 +3,7 @@
 @using FortuneInternalData.Web.Extensions
 @{
     ViewData["Title"] = "Edit Phone Record";
+    var isSuperadmin = User.IsInRole("Superadmin");
 }
 
 <div class="row justify-content-center">
@@ -62,7 +63,30 @@
                         <span asp-validation-for="Remark" class="text-danger small"></span>
                     </div>
 
-                    <div class="d-flex gap-2">
+                    @if (isSuperadmin)
+                    {
+                        <hr />
+                        <h6 class="text-muted mb-3"><i class="bi bi-globe"></i> Web Status Fields</h6>
+                        <div class="row g-2">
+                            @{
+                                var webNames = new[] { "Web1","Web2","Web3","Web4","Web5","Web6","Web7","Web8","Web9","Web10" };
+                                var webVals = new[] { Model.Web1, Model.Web2, Model.Web3, Model.Web4, Model.Web5, Model.Web6, Model.Web7, Model.Web8, Model.Web9, Model.Web10 };
+                            }
+                            @for (int w = 0; w < 10; w++)
+                            {
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <label class="form-label small fw-semibold">web@(w+1)</label>
+                                    <select name="@webNames[w]" class="form-select form-select-sm">
+                                        <option value="" selected="@(string.IsNullOrEmpty(webVals[w]))">-- Not Set --</option>
+                                        <option value="YES" selected="@(webVals[w]?.Equals("YES", StringComparison.OrdinalIgnoreCase) == true)">YES</option>
+                                        <option value="NO" selected="@(webVals[w]?.Equals("NO", StringComparison.OrdinalIgnoreCase) == true)">NO</option>
+                                    </select>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2 mt-4">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-lg"></i> Save Changes
                         </button>

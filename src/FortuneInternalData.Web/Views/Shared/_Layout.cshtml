@@ -14,6 +14,8 @@
         .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: #334155; }
         .sidebar .nav-link i { margin-right: 8px; width: 20px; text-align: center; }
         .sidebar-brand { padding: 20px; color: #fff; font-weight: 700; font-size: 1.1rem; border-bottom: 1px solid #334155; }
+        .sidebar .submenu .nav-link { padding: 7px 20px 7px 44px; font-size: 0.875rem; }
+        .sidebar .submenu { background: #162032; }
         .main-content { min-height: 100vh; }
         .stat-card { border: none; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
         .stat-card .stat-value { font-size: 2rem; font-weight: 700; }
@@ -34,50 +36,94 @@
     <div class="d-flex">
         @if (User.Identity?.IsAuthenticated == true)
         {
+            var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
+            var action = ViewContext.RouteData.Values["action"]?.ToString();
             <nav class="sidebar d-none d-md-block" style="width: 250px; flex-shrink: 0;">
                 <div class="sidebar-brand">
                     <i class="bi bi-database-fill"></i> Fortune Data
                 </div>
                 <ul class="nav flex-column mt-2">
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")" href="/Dashboard">
+                        <a class="nav-link @(ctrl == "Dashboard" ? "active" : "")" href="/Dashboard">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "PhoneNumbers" ? "active" : "")" href="/PhoneNumbers">
+                        <a class="nav-link @(ctrl == "PhoneNumbers" ? "active" : "")" href="/PhoneNumbers">
                             <i class="bi bi-telephone-fill"></i> Phone Data
                         </a>
                     </li>
+
+                    @* Imports submenu *@
                     @if (User.IsInRole("Superadmin") || User.IsInRole("Admin") || User.IsInRole("Manager"))
                     {
+                        var importsOpen = ctrl == "Imports";
                         <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Imports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" href="/Imports">
-                                <i class="bi bi-clock-history"></i> Import History
+                            <a class="nav-link @(importsOpen ? "active" : "") d-flex justify-content-between align-items-center"
+                               href="#importsSubmenu" data-bs-toggle="collapse"
+                               aria-expanded="@(importsOpen ? "true" : "false")">
+                                <span><i class="bi bi-upload"></i> Imports</span>
+                                <i class="bi bi-chevron-@(importsOpen ? "up" : "down") small"></i>
                             </a>
                         </li>
+                        <div class="collapse @(importsOpen ? "show" : "")" id="importsSubmenu">
+                            <ul class="nav flex-column submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link @(ctrl == "Imports" && action == "Index" ? "active" : "")" href="/Imports">
+                                        <i class="bi bi-clock-history"></i> Import History
+                                    </a>
+                                </li>
+                                @if (User.IsInRole("Superadmin") || User.IsInRole("Admin"))
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link @(ctrl == "Imports" && action == "Create" ? "active" : "")" href="/Imports/Create">
+                                            <i class="bi bi-cloud-upload-fill"></i> Upload Import
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link @(ctrl == "Imports" && action == "CreateUpdate" ? "active" : "")" href="/Imports/CreateUpdate">
+                                            <i class="bi bi-arrow-repeat"></i> Update Import
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link @(ctrl == "Imports" && action == "CreateDelete" ? "active" : "")" href="/Imports/CreateDelete">
+                                            <i class="bi bi-trash"></i> Delete Import
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link @(ctrl == "Imports" && action == "CreateWebStatus" ? "active" : "")" href="/Imports/CreateWebStatus">
+                                            <i class="bi bi-globe"></i> Web Status Import
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
                     }
-                    @if (User.IsInRole("Superadmin") || User.IsInRole("Admin"))
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Imports" && ViewContext.RouteData.Values["action"]?.ToString() == "Create" ? "active" : "")" href="/Imports/Create">
-                                <i class="bi bi-cloud-upload-fill"></i> Upload Import
-                            </a>
-                        </li>
-                    }
+
                     @if (User.IsInRole("Superadmin"))
                     {
                         <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active" : "")" href="/Users">
+                            <a class="nav-link @(ctrl == "WebSummary" ? "active" : "")" href="/WebSummary">
+                                <i class="bi bi-globe2"></i> Web Summary
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ctrl == "Users" ? "active" : "")" href="/Users">
                                 <i class="bi bi-people-fill"></i> Users
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Permissions" ? "active" : "")" href="/Permissions">
+                            <a class="nav-link @(ctrl == "Permissions" ? "active" : "")" href="/Permissions">
                                 <i class="bi bi-shield-check"></i> Role Permissions
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ctrl == "IpWhitelist" ? "active" : "")" href="/Admin/IpWhitelist">
+                                <i class="bi bi-shield-lock"></i> IP Whitelist
+                            </a>
+                        </li>
                     }
+
                     <li class="nav-item mt-3 border-top border-secondary pt-2">
                         <a class="nav-link" href="/Account/Setup2Fa">
                             <i class="bi bi-shield-lock"></i> Setup 2FA
@@ -118,8 +164,16 @@
                                 <li class="nav-item"><a class="nav-link" href="/Dashboard">Dashboard</a></li>
                                 <li class="nav-item"><a class="nav-link" href="/PhoneNumbers">Phone Data</a></li>
                                 <li class="nav-item"><a class="nav-link" href="/Imports">Import History</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Imports/Create">Upload</a></li>
-                                <li class="nav-item"><a class="nav-link" href="/Users">Users</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Imports/Create">Upload Import</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Imports/CreateUpdate">Update Import</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Imports/CreateDelete">Delete Import</a></li>
+                                <li class="nav-item"><a class="nav-link" href="/Imports/CreateWebStatus">Web Status Import</a></li>
+                                @if (User.IsInRole("Superadmin"))
+                                {
+                                    <li class="nav-item"><a class="nav-link" href="/WebSummary">Web Summary</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="/Users">Users</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="/Admin/IpWhitelist">IP Whitelist</a></li>
+                                }
                                 <li class="nav-item"><a class="nav-link" href="/Account/Setup2Fa">Setup 2FA</a></li>
                             </ul>
                             <form method="post" action="/Account/Logout">

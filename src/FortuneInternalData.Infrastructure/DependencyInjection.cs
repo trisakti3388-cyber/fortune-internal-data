@@ -71,6 +71,12 @@ public static class DependencyInjection
         // Permissions
         services.AddScoped<IPermissionService, PermissionService>();
 
+        // Web Summary
+        services.AddScoped<IWebSummaryService, WebSummaryService>();
+
+        // IP Whitelist (singleton cache)
+        services.AddSingleton<IAllowedIpCacheService, AllowedIpCacheService>();
+
         // Repositories
         services.AddScoped<IPhoneNumberRepository, PhoneNumberRepository>();
         services.AddScoped<IImportBatchRepository, ImportBatchRepository>();

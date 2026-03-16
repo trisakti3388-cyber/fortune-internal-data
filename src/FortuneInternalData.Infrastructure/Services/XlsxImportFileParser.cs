@@ -72,7 +72,7 @@ public class XlsxImportFileParser : IImportFileParser
             yield return chunk;
     }
 
-    private static ParsedImportRow BuildRow(IXLRow wsRow, (int phoneCol, int seqCol, int remarkCol, int whatsappStatusCol, int agentNameCol, int referenceCol) cols, string phoneNumber)
+    private static ParsedImportRow BuildRow(IXLRow wsRow, ColumnMap cols, string phoneNumber)
     {
         return new ParsedImportRow
         {
@@ -82,37 +82,58 @@ public class XlsxImportFileParser : IImportFileParser
             WhatsappStatus = cols.whatsappStatusCol > 0 ? NullIfEmpty(wsRow.Cell(cols.whatsappStatusCol).GetString().Trim()) : null,
             AgentName = cols.agentNameCol > 0 ? NullIfEmpty(wsRow.Cell(cols.agentNameCol).GetString().Trim()) : null,
             Reference = cols.referenceCol > 0 ? NullIfEmpty(wsRow.Cell(cols.referenceCol).GetString().Trim()) : null,
+            UpdateStatus = cols.statusCol > 0 ? NullIfEmpty(wsRow.Cell(cols.statusCol).GetString().Trim()) : null,
+            Web1 = cols.web1Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web1Col).GetString().Trim()) : null,
+            Web2 = cols.web2Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web2Col).GetString().Trim()) : null,
+            Web3 = cols.web3Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web3Col).GetString().Trim()) : null,
+            Web4 = cols.web4Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web4Col).GetString().Trim()) : null,
+            Web5 = cols.web5Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web5Col).GetString().Trim()) : null,
+            Web6 = cols.web6Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web6Col).GetString().Trim()) : null,
+            Web7 = cols.web7Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web7Col).GetString().Trim()) : null,
+            Web8 = cols.web8Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web8Col).GetString().Trim()) : null,
+            Web9 = cols.web9Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web9Col).GetString().Trim()) : null,
+            Web10 = cols.web10Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web10Col).GetString().Trim()) : null,
         };
     }
 
     private static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
-    private static (int phoneCol, int seqCol, int remarkCol, int whatsappStatusCol, int agentNameCol, int referenceCol) GetColumns(IXLWorksheet worksheet)
+    private record ColumnMap(int phoneCol, int seqCol, int remarkCol, int whatsappStatusCol, int agentNameCol, int referenceCol, int statusCol,
+        int web1Col, int web2Col, int web3Col, int web4Col, int web5Col, int web6Col, int web7Col, int web8Col, int web9Col, int web10Col);
+
+    private static ColumnMap GetColumns(IXLWorksheet worksheet)
     {
         var headerRow = worksheet.Row(1);
         var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        for (int col = 1; col <= headerRow.LastCellUsed()?.Address.ColumnNumber; col++)
+        var lastCell = headerRow.LastCellUsed();
+        int lastColNum = lastCell?.Address.ColumnNumber ?? 0;
+        for (int col = 1; col <= lastColNum; col++)
         {
             var headerVal = headerRow.Cell(col).GetString().Trim().ToLowerInvariant().Replace(" ", "_");
             if (!string.IsNullOrWhiteSpace(headerVal))
                 headers[headerVal] = col;
         }
 
-        int phoneCol = headers.GetValueOrDefault("phone_number",
-                        headers.GetValueOrDefault("phonenumber",
-                        headers.GetValueOrDefault("phone", -1)));
+        int Get(params string[] names)
+        {
+            foreach (var n in names)
+                if (headers.TryGetValue(n, out var v)) return v;
+            return -1;
+        }
 
-        int seqCol = headers.GetValueOrDefault("seq",
-                     headers.GetValueOrDefault("no", -1));
-
-        int remarkCol = headers.GetValueOrDefault("remark",
-                        headers.GetValueOrDefault("remarks", -1));
-
-        int whatsappStatusCol = headers.GetValueOrDefault("whatsapp_status", -1);
-        int agentNameCol = headers.GetValueOrDefault("agent_name", -1);
-        int referenceCol = headers.GetValueOrDefault("reference", -1);
-
-        return (phoneCol, seqCol, remarkCol, whatsappStatusCol, agentNameCol, referenceCol);
+        return new ColumnMap(
+            phoneCol: Get("phone_number", "phonenumber", "phone"),
+            seqCol: Get("seq", "no"),
+            remarkCol: Get("remark", "remarks"),
+            whatsappStatusCol: Get("whatsapp_status"),
+            agentNameCol: Get("agent_name"),
+            referenceCol: Get("reference"),
+            statusCol: Get("status"),
+            web1Col: Get("web1"), web2Col: Get("web2"), web3Col: Get("web3"),
+            web4Col: Get("web4"), web5Col: Get("web5"), web6Col: Get("web6"),
+            web7Col: Get("web7"), web8Col: Get("web8"), web9Col: Get("web9"),
+            web10Col: Get("web10")
+        );
     }
 }
