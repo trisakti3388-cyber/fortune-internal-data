@@ -17,6 +17,12 @@
                     <strong>Optional columns:</strong> <code>seq</code>, <code>remark</code>
                 </div>
 
+                <div class="d-grid mb-4">
+                    <a href="/Imports/DownloadTemplate" class="btn btn-outline-success">
+                        <i class="bi bi-file-earmark-excel"></i> Download Excel Template
+                    </a>
+                </div>
+
                 <form method="post" asp-action="Create" enctype="multipart/form-data">
                     <div asp-validation-summary="All" class="alert alert-danger" style="display: @(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
 

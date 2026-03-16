@@ -8,4 +8,5 @@ public class UserListItemDto
     public string Role { get; set; } = string.Empty;
     public bool TwoFactorEnabled { get; set; }
     public bool IsActive { get; set; }
+    public bool IsLockedOut { get; set; }
 }

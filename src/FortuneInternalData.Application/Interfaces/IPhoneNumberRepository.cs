@@ -11,4 +11,6 @@ public interface IPhoneNumberRepository
     Task<int> CountAsync(string? phoneNumber, string? status, string? whatsappStatus, CancellationToken cancellationToken = default);
     Task AddRangeAsync(IEnumerable<PhoneNumberRecord> records, CancellationToken cancellationToken = default);
     Task UpdateAsync(PhoneNumberRecord record, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PhoneNumberRecord>> GetByIdsAsync(IEnumerable<ulong> ids, CancellationToken cancellationToken = default);
+    Task DeleteRangeAsync(IEnumerable<ulong> ids, CancellationToken cancellationToken = default);
 }

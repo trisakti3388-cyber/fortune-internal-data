@@ -67,4 +67,20 @@ public class PhoneNumberRepository : IPhoneNumberRepository
         _dbContext.PhoneNumbers.Update(record);
         return Task.CompletedTask;
     }
+
+    public async Task<IReadOnlyList<PhoneNumberRecord>> GetByIdsAsync(IEnumerable<ulong> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids.ToList();
+        return await _dbContext.PhoneNumbers
+            .Where(x => idList.Contains(x.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task DeleteRangeAsync(IEnumerable<ulong> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids.ToList();
+        await _dbContext.PhoneNumbers
+            .Where(x => idList.Contains(x.Id))
+            .ExecuteDeleteAsync(cancellationToken);
+    }
 }

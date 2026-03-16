@@ -1,8 +1,11 @@
 @model FortuneInternalData.Web.ViewModels.PhoneNumberListViewModel
 @using FortuneInternalData.Domain.Constants
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
 @{
     ViewData["Title"] = "Phone Data";
     var totalPages = Model.Result.TotalCount > 0 ? (int)Math.Ceiling((double)Model.Result.TotalCount / Model.PageSize) : 1;
+    var isAdminOrAbove = (await AuthorizationService.AuthorizeAsync(User, FortuneInternalData.Web.Security.PolicyNames.AdminOrAbove)).Succeeded;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -40,7 +43,7 @@
             <div class="col-md-2">
                 <label class="form-label small">Per Page</label>
                 <select name="PageSize" class="form-select">
-                    @foreach (var ps in new[] { 20, 50, 100 })
+                    @foreach (var ps in new[] { 20, 50, 100, 1000, 5000, 10000 })
                     {
                         <option value="@ps" selected="@(Model.PageSize == ps)">@ps</option>
                     }
@@ -55,11 +58,32 @@
     </div>
 </div>
 
+@if (isAdminOrAbove && Model.Result.Items.Any())
+{
+    <div class="mb-3 d-flex gap-2" id="batchActionBar">
+        <span class="text-muted small align-self-center" id="selectedCount">0 selected</span>
+        <button type="button" class="btn btn-danger btn-sm" id="batchDeleteBtn" disabled
+                onclick="submitBatchDelete()">
+            <i class="bi bi-trash"></i> Delete Selected
+        </button>
+        <button type="button" class="btn btn-warning btn-sm" id="batchUpdateBtn" disabled
+                data-bs-toggle="modal" data-bs-target="#batchUpdateModal">
+            <i class="bi bi-pencil-square"></i> Batch Update
+        </button>
+    </div>
+}
+
 <div class="card stat-card">
     <div class="card-body p-0">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0" id="phoneTable">
             <thead>
                 <tr>
+                    @if (isAdminOrAbove)
+                    {
+                        <th style="width:40px">
+                            <input type="checkbox" id="selectAll" class="form-check-input" title="Select All" />
+                        </th>
+                    }
                     <th>#</th>
                     <th>Seq</th>
                     <th>Phone Number</th>
@@ -79,6 +103,12 @@
                     {
                         idx++;
                         <tr>
+                            @if (isAdminOrAbove)
+                            {
+                                <td>
+                                    <input type="checkbox" class="form-check-input row-check" value="@item.Id" />
+                                </td>
+                            }
                             <td class="text-muted">@idx</td>
                             <td>@item.Seq</td>
                             <td><code>@item.PhoneNumber</code></td>
@@ -104,7 +134,7 @@
                 }
                 else
                 {
-                    <tr><td colspan="9" class="text-center text-muted py-4">No records found.</td></tr>
+                    <tr><td colspan="@(isAdminOrAbove ? 10 : 9)" class="text-center text-muted py-4">No records found.</td></tr>
                 }
             </tbody>
         </table>
@@ -135,4 +165,128 @@
             }
         </ul>
     </nav>
+}
+
+@if (isAdminOrAbove)
+{
+    @* Batch Delete hidden form *@
+    <form method="post" asp-action="BatchDelete" id="batchDeleteForm" style="display:none">
+        @Html.AntiForgeryToken()
+        <div id="batchDeleteIds"></div>
+    </form>
+
+    @* Batch Update Modal *@
+    <div class="modal fade" id="batchUpdateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-action="BatchUpdate" id="batchUpdateForm">
+                    @Html.AntiForgeryToken()
+                    <div id="batchUpdateIds"></div>
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Batch Update</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">Update <strong id="batchUpdateCount">0</strong> selected record(s). Leave a field blank to keep existing value.</p>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="Status" class="form-select">
+                                <option value="">-- Keep existing --</option>
+                                @foreach (var s in PhoneStatuses.All)
+                                {
+                                    <option value="@s">@s</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">WhatsApp Status</label>
+                            <select name="WhatsappStatus" class="form-select">
+                                <option value="">-- Keep existing --</option>
+                                @foreach (var s in WhatsappStatuses.All)
+                                {
+                                    <option value="@s">@s</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning"><i class="bi bi-pencil-square"></i> Update Selected</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @if (isAdminOrAbove)
+    {
+        <script>
+            var selectedIds = new Set();
+
+            function updateBatchButtons() {
+                var count = selectedIds.size;
+                document.getElementById('selectedCount').textContent = count + ' selected';
+                document.getElementById('batchDeleteBtn').disabled = count === 0;
+                document.getElementById('batchUpdateBtn').disabled = count === 0;
+                var countEl = document.getElementById('batchUpdateCount');
+                if (countEl) countEl.textContent = count;
+            }
+
+            document.querySelectorAll('.row-check').forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    if (this.checked) {
+                        selectedIds.add(this.value);
+                    } else {
+                        selectedIds.delete(this.value);
+                    }
+                    updateBatchButtons();
+                });
+            });
+
+            document.getElementById('selectAll').addEventListener('change', function () {
+                var checked = this.checked;
+                document.querySelectorAll('.row-check').forEach(function (cb) {
+                    cb.checked = checked;
+                    if (checked) {
+                        selectedIds.add(cb.value);
+                    } else {
+                        selectedIds.delete(cb.value);
+                    }
+                });
+                updateBatchButtons();
+            });
+
+            function submitBatchDelete() {
+                if (selectedIds.size === 0) return;
+                if (!confirm('Delete ' + selectedIds.size + ' selected record(s)? This cannot be undone.')) return;
+
+                var form = document.getElementById('batchDeleteForm');
+                var container = document.getElementById('batchDeleteIds');
+                container.innerHTML = '';
+                selectedIds.forEach(function (id) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'selectedIds';
+                    input.value = id;
+                    container.appendChild(input);
+                });
+                form.submit();
+            }
+
+            document.getElementById('batchUpdateModal').addEventListener('show.bs.modal', function () {
+                var container = document.getElementById('batchUpdateIds');
+                container.innerHTML = '';
+                selectedIds.forEach(function (id) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'SelectedIds';
+                    input.value = id;
+                    container.appendChild(input);
+                });
+                document.getElementById('batchUpdateCount').textContent = selectedIds.size;
+            });
+        </script>
+    }
 }

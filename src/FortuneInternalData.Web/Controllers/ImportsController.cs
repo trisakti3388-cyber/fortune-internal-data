@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using ClosedXML.Excel;
 using FortuneInternalData.Application.Interfaces;
 using FortuneInternalData.Web.Security;
 using FortuneInternalData.Web.ViewModels;
@@ -40,6 +41,34 @@ public class ImportsController : Controller
     public IActionResult Create()
     {
         return View(new UploadImportViewModel());
+    }
+
+    [Authorize(Policy = PolicyNames.AdminOrAbove)]
+    [HttpGet]
+    public IActionResult DownloadTemplate()
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Template");
+
+        worksheet.Cell(1, 1).Value = "seq";
+        worksheet.Cell(1, 2).Value = "phone_number";
+        worksheet.Cell(1, 3).Value = "remark";
+
+        // Style header row
+        var headerRow = worksheet.Row(1);
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
+
+        // Auto-fit columns
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        return File(stream.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "phone_import_template.xlsx");
     }
 
     [Authorize(Policy = PolicyNames.AdminOrAbove)]

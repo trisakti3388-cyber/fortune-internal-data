@@ -82,4 +82,70 @@ public class UsersController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["ErrorMessage"] = string.Join("; ", ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage));
+            return RedirectToAction(nameof(Index));
+        }
+
+        var (success, errors) = await _userService.ResetPasswordAsync(model.UserId, model.NewPassword, cancellationToken);
+        if (!success)
+            TempData["ErrorMessage"] = string.Join("; ", errors);
+        else
+            TempData["SuccessMessage"] = $"Password for '{model.UserName}' has been reset. They will be prompted to change it on next login.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangeRole(ChangeRoleViewModel model, CancellationToken cancellationToken)
+    {
+        if (!Roles.All.Contains(model.NewRole))
+        {
+            TempData["ErrorMessage"] = "Invalid role selected.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var (success, errors) = await _userService.ChangeRoleAsync(model.UserId, model.NewRole, cancellationToken);
+        if (!success)
+            TempData["ErrorMessage"] = string.Join("; ", errors);
+        else
+            TempData["SuccessMessage"] = $"Role for '{model.UserName}' changed to '{model.NewRole}'.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UnlockUser(string userId, CancellationToken cancellationToken)
+    {
+        var (success, errors) = await _userService.UnlockUserAsync(userId, cancellationToken);
+        if (!success)
+            TempData["ErrorMessage"] = string.Join("; ", errors);
+        else
+            TempData["SuccessMessage"] = "User account unlocked successfully.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reset2Fa(string userId, CancellationToken cancellationToken)
+    {
+        var (success, errors) = await _userService.Reset2FaAsync(userId, cancellationToken);
+        if (!success)
+            TempData["ErrorMessage"] = string.Join("; ", errors);
+        else
+            TempData["SuccessMessage"] = "Two-factor authentication has been reset. The user will need to set up 2FA again.";
+
+        return RedirectToAction(nameof(Index));
+    }
 }

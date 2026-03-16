@@ -25,6 +25,7 @@ public class UserQueryService : IUserQueryService
         foreach (var user in users)
         {
             var roles = await _userManager.GetRolesAsync(user);
+            var isLockedOut = await _userManager.IsLockedOutAsync(user);
             result.Add(new UserListItemDto
             {
                 Id = user.Id,
@@ -32,7 +33,8 @@ public class UserQueryService : IUserQueryService
                 Email = user.Email ?? string.Empty,
                 Role = roles.FirstOrDefault() ?? "No Role",
                 TwoFactorEnabled = user.TwoFactorEnabled,
-                IsActive = user.IsActive
+                IsActive = user.IsActive,
+                IsLockedOut = isLockedOut
             });
         }
 

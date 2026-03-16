@@ -1,4 +1,5 @@
 @model FortuneInternalData.Web.ViewModels.UserListViewModel
+@using FortuneInternalData.Domain.Constants
 @{
     ViewData["Title"] = "User Management";
 }
@@ -18,6 +19,7 @@
                     <th>Role</th>
                     <th>2FA</th>
                     <th>Status</th>
+                    <th>Lockout</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -51,22 +53,160 @@
                                 }
                             </td>
                             <td>
-                                <form method="post" asp-action="ToggleActive" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="userId" value="@user.Id" />
-                                    <button type="submit" class="btn btn-outline-secondary btn-sm" onclick="return confirm('Toggle active status for @user.FullName?')">
-                                        @(user.IsActive ? "Deactivate" : "Activate")
+                                @if (user.IsLockedOut)
+                                {
+                                    <span class="badge bg-danger"><i class="bi bi-lock-fill"></i> Locked</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-dark border"><i class="bi bi-unlock"></i> Open</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <form method="post" asp-action="ToggleActive" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@user.Id" />
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm" onclick="return confirm('Toggle active status for @user.FullName?')">
+                                            @(user.IsActive ? "Deactivate" : "Activate")
+                                        </button>
+                                    </form>
+
+                                    <button type="button" class="btn btn-outline-warning btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#resetPwdModal"
+                                            data-userid="@user.Id" data-username="@user.FullName">
+                                        <i class="bi bi-key"></i> Reset Pwd
                                     </button>
-                                </form>
+
+                                    <button type="button" class="btn btn-outline-info btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#changeRoleModal"
+                                            data-userid="@user.Id" data-username="@user.FullName" data-currentrole="@user.Role">
+                                        <i class="bi bi-person-gear"></i> Role
+                                    </button>
+
+                                    @if (user.IsLockedOut)
+                                    {
+                                        <form method="post" asp-action="UnlockUser" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@user.Id" />
+                                            <button type="submit" class="btn btn-outline-success btn-sm">
+                                                <i class="bi bi-unlock"></i> Unlock
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (user.TwoFactorEnabled)
+                                    {
+                                        <form method="post" asp-action="Reset2Fa" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@user.Id" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reset 2FA for @user.FullName? They will need to set it up again.')">
+                                                <i class="bi bi-shield-x"></i> Reset 2FA
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
                 }
                 else
                 {
-                    <tr><td colspan="6" class="text-center text-muted py-4">No users found.</td></tr>
+                    <tr><td colspan="7" class="text-center text-muted py-4">No users found.</td></tr>
                 }
             </tbody>
         </table>
     </div>
 </div>
+
+@* Reset Password Modal *@
+<div class="modal fade" id="resetPwdModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="ResetPassword">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-key"></i> Reset Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Resetting password for: <strong id="resetPwdUserName"></strong></p>
+                    <input type="hidden" name="UserId" id="resetPwdUserId" />
+                    <input type="hidden" name="UserName" id="resetPwdUserNameHidden" />
+                    <div class="mb-3">
+                        <label class="form-label">New Password <span class="text-danger">*</span></label>
+                        <input type="password" name="NewPassword" class="form-control" required minlength="8" />
+                        <div class="form-text">Min 8 chars, must include uppercase, lowercase, digit, and special character.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                        <input type="password" name="ConfirmPassword" class="form-control" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-key"></i> Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Change Role Modal *@
+<div class="modal fade" id="changeRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="ChangeRole">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-gear"></i> Change Role</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Changing role for: <strong id="changeRoleUserName"></strong></p>
+                    <input type="hidden" name="UserId" id="changeRoleUserId" />
+                    <input type="hidden" name="UserName" id="changeRoleUserNameHidden" />
+                    <div class="mb-3">
+                        <label class="form-label">New Role <span class="text-danger">*</span></label>
+                        <select name="NewRole" id="changeRoleSelect" class="form-select" required>
+                            @foreach (var role in Roles.All)
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white"><i class="bi bi-person-gear"></i> Change Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('resetPwdModal').addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            document.getElementById('resetPwdUserId').value = button.getAttribute('data-userid');
+            document.getElementById('resetPwdUserName').textContent = button.getAttribute('data-username');
+            document.getElementById('resetPwdUserNameHidden').value = button.getAttribute('data-username');
+        });
+
+        document.getElementById('changeRoleModal').addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            document.getElementById('changeRoleUserId').value = button.getAttribute('data-userid');
+            document.getElementById('changeRoleUserName').textContent = button.getAttribute('data-username');
+            document.getElementById('changeRoleUserNameHidden').value = button.getAttribute('data-username');
+            var currentRole = button.getAttribute('data-currentrole');
+            var select = document.getElementById('changeRoleSelect');
+            for (var i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === currentRole) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+        });
+    </script>
+}

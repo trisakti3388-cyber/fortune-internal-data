@@ -10,6 +10,7 @@
     <ProjectReference Include="../FortuneInternalData.Domain/FortuneInternalData.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.0" />
   </ItemGroup>
 </Project>

@@ -1,12 +1,17 @@
 using FortuneInternalData.Infrastructure.Identity;
 using FortuneInternalData.Infrastructure.Persistence;
 using FortuneInternalData.Web.Extensions;
+using FortuneInternalData.Web.Filters;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<MustChangePasswordFilter>();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.AddService<MustChangePasswordFilter>();
+});
 builder.Services.AddFortuneInternalData(builder.Configuration);
 
 var app = builder.Build();

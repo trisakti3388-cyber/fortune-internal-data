@@ -72,4 +72,46 @@ public class PhoneNumbersController : Controller
         TempData["SuccessMessage"] = "Phone number record updated successfully.";
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = PolicyNames.AdminOrAbove)]
+    public async Task<IActionResult> BatchDelete(List<ulong> selectedIds, CancellationToken cancellationToken)
+    {
+        if (selectedIds == null || !selectedIds.Any())
+        {
+            TempData["ErrorMessage"] = "No records selected for deletion.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+        await _phoneNumberService.BatchDeleteAsync(selectedIds, userId, cancellationToken);
+
+        TempData["SuccessMessage"] = $"{selectedIds.Count} record(s) deleted successfully.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = PolicyNames.AdminOrAbove)]
+    public async Task<IActionResult> BatchUpdate(BatchUpdateViewModel model, CancellationToken cancellationToken)
+    {
+        if (model.SelectedIds == null || !model.SelectedIds.Any())
+        {
+            TempData["ErrorMessage"] = "No records selected for update.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (string.IsNullOrEmpty(model.Status) && string.IsNullOrEmpty(model.WhatsappStatus))
+        {
+            TempData["ErrorMessage"] = "Please select at least one field to update.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
+        await _phoneNumberService.BatchUpdateAsync(model.SelectedIds, model.Status, model.WhatsappStatus, userId, cancellationToken);
+
+        TempData["SuccessMessage"] = $"{model.SelectedIds.Count} record(s) updated successfully.";
+        return RedirectToAction(nameof(Index));
+    }
 }
