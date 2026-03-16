@@ -42,7 +42,7 @@
                 {
                     <li><hr class="dropdown-divider"></li>
                     <li><h6 class="dropdown-header">Web Fields</h6></li>
-                    for (int w = 1; w <= 10; w++)
+                    for (int w = 1; w <= 20; w++)
                     {
                         <li><label class="dropdown-item"><input type="checkbox" class="col-toggle me-2" data-col="col-web@(w)"> web@(w)</label></li>
                     }
@@ -169,7 +169,7 @@
                         <th class="col-countweb">Count Web</th>
                         @if (isSuperadmin)
                         {
-                            for (int w = 1; w <= 10; w++)
+                            for (int w = 1; w <= 20; w++)
                             {
                                 <th class="col-web@(w)" style="display:none">web@(w)</th>
                             }
@@ -221,8 +221,9 @@
                                 </td>
                                 @if (isSuperadmin)
                                 {
-                                    var webVals = new[] { item.Web1, item.Web2, item.Web3, item.Web4, item.Web5, item.Web6, item.Web7, item.Web8, item.Web9, item.Web10 };
-                                    for (int w = 1; w <= 10; w++)
+                                    var webVals = new[] { item.Web1, item.Web2, item.Web3, item.Web4, item.Web5, item.Web6, item.Web7, item.Web8, item.Web9, item.Web10,
+                                                          item.Web11, item.Web12, item.Web13, item.Web14, item.Web15, item.Web16, item.Web17, item.Web18, item.Web19, item.Web20 };
+                                    for (int w = 1; w <= 20; w++)
                                     {
                                         var val = webVals[w - 1];
                                         <td class="col-web@(w)" style="display:none">
@@ -247,7 +248,7 @@
                     }
                     else
                     {
-                        var colCount = (isAdminOrAbove ? 1 : 0) + 11 + (isSuperadmin ? 10 : 0);
+                        var colCount = (isAdminOrAbove ? 1 : 0) + 11 + (isSuperadmin ? 20 : 0);
                         <tr><td colspan="@colCount" class="text-center text-muted py-4">No records found.</td></tr>
                     }
                 </tbody>

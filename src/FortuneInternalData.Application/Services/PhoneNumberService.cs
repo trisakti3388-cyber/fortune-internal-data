@@ -37,6 +37,8 @@ public class PhoneNumberService : IPhoneNumberService
         ModifiedDate = x.ModifiedDate,
         Web1 = x.Web1, Web2 = x.Web2, Web3 = x.Web3, Web4 = x.Web4, Web5 = x.Web5,
         Web6 = x.Web6, Web7 = x.Web7, Web8 = x.Web8, Web9 = x.Web9, Web10 = x.Web10,
+        Web11 = x.Web11, Web12 = x.Web12, Web13 = x.Web13, Web14 = x.Web14, Web15 = x.Web15,
+        Web16 = x.Web16, Web17 = x.Web17, Web18 = x.Web18, Web19 = x.Web19, Web20 = x.Web20,
         AssignedUserId = x.AssignedUserId
     };
 
@@ -105,7 +107,9 @@ public class PhoneNumberService : IPhoneNumberService
             entity.AgentName,
             entity.Reference,
             entity.Web1, entity.Web2, entity.Web3, entity.Web4, entity.Web5,
-            entity.Web6, entity.Web7, entity.Web8, entity.Web9, entity.Web10
+            entity.Web6, entity.Web7, entity.Web8, entity.Web9, entity.Web10,
+            entity.Web11, entity.Web12, entity.Web13, entity.Web14, entity.Web15,
+            entity.Web16, entity.Web17, entity.Web18, entity.Web19, entity.Web20
         });
 
         entity.Status = request.Status;
@@ -123,6 +127,16 @@ public class PhoneNumberService : IPhoneNumberService
         entity.Web8 = request.Web8;
         entity.Web9 = request.Web9;
         entity.Web10 = request.Web10;
+        entity.Web11 = request.Web11;
+        entity.Web12 = request.Web12;
+        entity.Web13 = request.Web13;
+        entity.Web14 = request.Web14;
+        entity.Web15 = request.Web15;
+        entity.Web16 = request.Web16;
+        entity.Web17 = request.Web17;
+        entity.Web18 = request.Web18;
+        entity.Web19 = request.Web19;
+        entity.Web20 = request.Web20;
         entity.ModifiedDate = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
 
@@ -136,7 +150,9 @@ public class PhoneNumberService : IPhoneNumberService
             entity.AgentName,
             entity.Reference,
             entity.Web1, entity.Web2, entity.Web3, entity.Web4, entity.Web5,
-            entity.Web6, entity.Web7, entity.Web8, entity.Web9, entity.Web10
+            entity.Web6, entity.Web7, entity.Web8, entity.Web9, entity.Web10,
+            entity.Web11, entity.Web12, entity.Web13, entity.Web14, entity.Web15,
+            entity.Web16, entity.Web17, entity.Web18, entity.Web19, entity.Web20
         });
 
         await _activityLogRepository.AddAsync(new ActivityLog
@@ -175,6 +191,7 @@ public class PhoneNumberService : IPhoneNumberService
 
     public async Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string? remark, string? reference,
         string? web1, string? web2, string? web3, string? web4, string? web5, string? web6, string? web7, string? web8, string? web9, string? web10,
+        string? web11, string? web12, string? web13, string? web14, string? web15, string? web16, string? web17, string? web18, string? web19, string? web20,
         string? assignedUserId, string userId, CancellationToken cancellationToken = default)
     {
         var idList = ids.ToList();
@@ -201,6 +218,16 @@ public class PhoneNumberService : IPhoneNumberService
             if (!string.IsNullOrEmpty(web8)) record.Web8 = web8;
             if (!string.IsNullOrEmpty(web9)) record.Web9 = web9;
             if (!string.IsNullOrEmpty(web10)) record.Web10 = web10;
+            if (!string.IsNullOrEmpty(web11)) record.Web11 = web11;
+            if (!string.IsNullOrEmpty(web12)) record.Web12 = web12;
+            if (!string.IsNullOrEmpty(web13)) record.Web13 = web13;
+            if (!string.IsNullOrEmpty(web14)) record.Web14 = web14;
+            if (!string.IsNullOrEmpty(web15)) record.Web15 = web15;
+            if (!string.IsNullOrEmpty(web16)) record.Web16 = web16;
+            if (!string.IsNullOrEmpty(web17)) record.Web17 = web17;
+            if (!string.IsNullOrEmpty(web18)) record.Web18 = web18;
+            if (!string.IsNullOrEmpty(web19)) record.Web19 = web19;
+            if (!string.IsNullOrEmpty(web20)) record.Web20 = web20;
             // __unassign__ = set to null; non-empty user ID = assign; empty = keep existing
             if (assignedUserId == "__unassign__")
                 record.AssignedUserId = null;

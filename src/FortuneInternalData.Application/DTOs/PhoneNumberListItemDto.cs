@@ -22,10 +22,21 @@ public class PhoneNumberListItemDto
     public string? Web8 { get; set; }
     public string? Web9 { get; set; }
     public string? Web10 { get; set; }
+    public string? Web11 { get; set; }
+    public string? Web12 { get; set; }
+    public string? Web13 { get; set; }
+    public string? Web14 { get; set; }
+    public string? Web15 { get; set; }
+    public string? Web16 { get; set; }
+    public string? Web17 { get; set; }
+    public string? Web18 { get; set; }
+    public string? Web19 { get; set; }
+    public string? Web20 { get; set; }
     public string? AssignedUserId { get; set; }
     public string? AssignedUserName { get; set; }
 
-    /// <summary>Computed: count of web1-web10 fields that are "YES".</summary>
-    public int CountWeb => new[] { Web1, Web2, Web3, Web4, Web5, Web6, Web7, Web8, Web9, Web10 }
+    /// <summary>Computed: count of web1-web20 fields that are "YES".</summary>
+    public int CountWeb => new[] { Web1, Web2, Web3, Web4, Web5, Web6, Web7, Web8, Web9, Web10,
+                                   Web11, Web12, Web13, Web14, Web15, Web16, Web17, Web18, Web19, Web20 }
         .Count(w => "YES".Equals(w, StringComparison.OrdinalIgnoreCase));
 }

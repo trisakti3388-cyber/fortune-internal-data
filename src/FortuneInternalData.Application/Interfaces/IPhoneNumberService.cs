@@ -11,6 +11,7 @@ public interface IPhoneNumberService
     Task BatchDeleteAsync(IEnumerable<ulong> ids, string userId, CancellationToken cancellationToken = default);
     Task BatchUpdateAsync(IEnumerable<ulong> ids, string? status, string? whatsappStatus, string? agentName, string? remark, string? reference,
         string? web1, string? web2, string? web3, string? web4, string? web5, string? web6, string? web7, string? web8, string? web9, string? web10,
+        string? web11, string? web12, string? web13, string? web14, string? web15, string? web16, string? web17, string? web18, string? web19, string? web20,
         string? assignedUserId, string userId, CancellationToken cancellationToken = default);
     Task AssignToUserAsync(IEnumerable<ulong> ids, string? assignedUserId, string currentUserId, CancellationToken cancellationToken = default);
 }

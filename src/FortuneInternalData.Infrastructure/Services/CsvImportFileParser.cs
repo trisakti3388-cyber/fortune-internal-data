@@ -111,6 +111,16 @@ public class CsvImportFileParser : IImportFileParser
             Web8 = NullIfEmpty(GetField(csv, "web8")),
             Web9 = NullIfEmpty(GetField(csv, "web9")),
             Web10 = NullIfEmpty(GetField(csv, "web10")),
+            Web11 = NullIfEmpty(GetField(csv, "web11")),
+            Web12 = NullIfEmpty(GetField(csv, "web12")),
+            Web13 = NullIfEmpty(GetField(csv, "web13")),
+            Web14 = NullIfEmpty(GetField(csv, "web14")),
+            Web15 = NullIfEmpty(GetField(csv, "web15")),
+            Web16 = NullIfEmpty(GetField(csv, "web16")),
+            Web17 = NullIfEmpty(GetField(csv, "web17")),
+            Web18 = NullIfEmpty(GetField(csv, "web18")),
+            Web19 = NullIfEmpty(GetField(csv, "web19")),
+            Web20 = NullIfEmpty(GetField(csv, "web20")),
         };
     }
 }

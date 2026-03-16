@@ -18,6 +18,16 @@ public class BatchUpdateViewModel
     public string? Web8 { get; set; }
     public string? Web9 { get; set; }
     public string? Web10 { get; set; }
+    public string? Web11 { get; set; }
+    public string? Web12 { get; set; }
+    public string? Web13 { get; set; }
+    public string? Web14 { get; set; }
+    public string? Web15 { get; set; }
+    public string? Web16 { get; set; }
+    public string? Web17 { get; set; }
+    public string? Web18 { get; set; }
+    public string? Web19 { get; set; }
+    public string? Web20 { get; set; }
     // For Superadmin only. Empty string = keep existing, "__unassign__" = unassign, otherwise = assign to user ID
     public string? AssignedUserId { get; set; }
 }

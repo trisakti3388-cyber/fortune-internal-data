@@ -164,6 +164,8 @@ public class ImportService : IImportService
                         UpdateStatus = row.UpdateStatus,
                         Web1 = row.Web1, Web2 = row.Web2, Web3 = row.Web3, Web4 = row.Web4, Web5 = row.Web5,
                         Web6 = row.Web6, Web7 = row.Web7, Web8 = row.Web8, Web9 = row.Web9, Web10 = row.Web10,
+                        Web11 = row.Web11, Web12 = row.Web12, Web13 = row.Web13, Web14 = row.Web14, Web15 = row.Web15,
+                        Web16 = row.Web16, Web17 = row.Web17, Web18 = row.Web18, Web19 = row.Web19, Web20 = row.Web20,
                         AssignedUserId = batch.AssignedUserId,
                         RowStatus = status,
                         Message = message,
@@ -275,6 +277,8 @@ public class ImportService : IImportService
                         UpdateStatus = row.UpdateStatus,
                         Web1 = row.Web1, Web2 = row.Web2, Web3 = row.Web3, Web4 = row.Web4, Web5 = row.Web5,
                         Web6 = row.Web6, Web7 = row.Web7, Web8 = row.Web8, Web9 = row.Web9, Web10 = row.Web10,
+                        Web11 = row.Web11, Web12 = row.Web12, Web13 = row.Web13, Web14 = row.Web14, Web15 = row.Web15,
+                        Web16 = row.Web16, Web17 = row.Web17, Web18 = row.Web18, Web19 = row.Web19, Web20 = row.Web20,
                         RowStatus = status,
                         Message = message,
                         CreatedAt = DateTime.UtcNow,
@@ -438,8 +442,8 @@ public class ImportService : IImportService
     private async Task ConfirmRegularImportAsync(ImportBatch batch, string userId, CancellationToken cancellationToken)
     {
         var sql = @"
-INSERT INTO phone_numbers (seq, phone_number, remark, status, whatsapp_status, agent_name, reference, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, assigned_user_id, upload_date, modified_date, created_at, updated_at)
-SELECT seq, normalized_phone_number, remark, 'active', whatsapp_status, agent_name, reference, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, assigned_user_id, NOW(), NOW(), NOW(), NOW()
+INSERT INTO phone_numbers (seq, phone_number, remark, status, whatsapp_status, agent_name, reference, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, web11, web12, web13, web14, web15, web16, web17, web18, web19, web20, assigned_user_id, upload_date, modified_date, created_at, updated_at)
+SELECT seq, normalized_phone_number, remark, 'active', whatsapp_status, agent_name, reference, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, web11, web12, web13, web14, web15, web16, web17, web18, web19, web20, assigned_user_id, NOW(), NOW(), NOW(), NOW()
 FROM import_batch_rows
 WHERE batch_id = {0} AND row_status = 'new'";
 
@@ -510,6 +514,16 @@ SET
   pn.web8  = CASE WHEN ibr.web8  IS NOT NULL THEN ibr.web8  ELSE pn.web8  END,
   pn.web9  = CASE WHEN ibr.web9  IS NOT NULL THEN ibr.web9  ELSE pn.web9  END,
   pn.web10 = CASE WHEN ibr.web10 IS NOT NULL THEN ibr.web10 ELSE pn.web10 END,
+  pn.web11 = CASE WHEN ibr.web11 IS NOT NULL THEN ibr.web11 ELSE pn.web11 END,
+  pn.web12 = CASE WHEN ibr.web12 IS NOT NULL THEN ibr.web12 ELSE pn.web12 END,
+  pn.web13 = CASE WHEN ibr.web13 IS NOT NULL THEN ibr.web13 ELSE pn.web13 END,
+  pn.web14 = CASE WHEN ibr.web14 IS NOT NULL THEN ibr.web14 ELSE pn.web14 END,
+  pn.web15 = CASE WHEN ibr.web15 IS NOT NULL THEN ibr.web15 ELSE pn.web15 END,
+  pn.web16 = CASE WHEN ibr.web16 IS NOT NULL THEN ibr.web16 ELSE pn.web16 END,
+  pn.web17 = CASE WHEN ibr.web17 IS NOT NULL THEN ibr.web17 ELSE pn.web17 END,
+  pn.web18 = CASE WHEN ibr.web18 IS NOT NULL THEN ibr.web18 ELSE pn.web18 END,
+  pn.web19 = CASE WHEN ibr.web19 IS NOT NULL THEN ibr.web19 ELSE pn.web19 END,
+  pn.web20 = CASE WHEN ibr.web20 IS NOT NULL THEN ibr.web20 ELSE pn.web20 END,
   pn.modified_date = NOW(),
   pn.updated_at = NOW()
 WHERE ibr.batch_id = {0} AND ibr.row_status = 'matched'";
@@ -611,7 +625,7 @@ WHERE ibr.batch_id = {0} AND ibr.row_status = 'found'";
             var batch = rows.Skip(offset).Take(batchSize).ToList();
 
             var sql = new StringBuilder(
-                "INSERT INTO import_batch_rows (batch_id, seq, raw_phone_number, normalized_phone_number, remark, whatsapp_status, agent_name, reference, update_status, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, row_status, message, created_at, updated_at, assigned_user_id) VALUES ");
+                "INSERT INTO import_batch_rows (batch_id, seq, raw_phone_number, normalized_phone_number, remark, whatsapp_status, agent_name, reference, update_status, web1, web2, web3, web4, web5, web6, web7, web8, web9, web10, web11, web12, web13, web14, web15, web16, web17, web18, web19, web20, row_status, message, created_at, updated_at, assigned_user_id) VALUES ");
 
             var parameters = new List<MySqlConnector.MySqlParameter>();
 
@@ -620,7 +634,7 @@ WHERE ibr.batch_id = {0} AND ibr.row_status = 'found'";
                 var row = batch[j];
                 var p = $"@p{j}_";
                 if (j > 0) sql.Append(',');
-                sql.Append($"({p}0,{p}1,{p}2,{p}3,{p}4,{p}5,{p}6,{p}7,{p}8,{p}9,{p}10,{p}11,{p}12,{p}13,{p}14,{p}15,{p}16,{p}17,{p}18,{p}19,{p}20,{p}21,{p}22,{p}23)");
+                sql.Append($"({p}0,{p}1,{p}2,{p}3,{p}4,{p}5,{p}6,{p}7,{p}8,{p}9,{p}10,{p}11,{p}12,{p}13,{p}14,{p}15,{p}16,{p}17,{p}18,{p}19,{p}20,{p}21,{p}22,{p}23,{p}24,{p}25,{p}26,{p}27,{p}28,{p}29,{p}30,{p}31,{p}32,{p}33)");
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}0", row.BatchId));
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}1", (object?)row.Seq ?? DBNull.Value));
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}2", (object?)row.RawPhoneNumber ?? DBNull.Value));
@@ -640,11 +654,21 @@ WHERE ibr.batch_id = {0} AND ibr.row_status = 'found'";
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}16", (object?)row.Web8 ?? DBNull.Value));
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}17", (object?)row.Web9 ?? DBNull.Value));
                 parameters.Add(new MySqlConnector.MySqlParameter($"{p}18", (object?)row.Web10 ?? DBNull.Value));
-                parameters.Add(new MySqlConnector.MySqlParameter($"{p}19", row.RowStatus));
-                parameters.Add(new MySqlConnector.MySqlParameter($"{p}20", (object?)row.Message ?? DBNull.Value));
-                parameters.Add(new MySqlConnector.MySqlParameter($"{p}21", row.CreatedAt));
-                parameters.Add(new MySqlConnector.MySqlParameter($"{p}22", row.UpdatedAt));
-                parameters.Add(new MySqlConnector.MySqlParameter($"{p}23", (object?)row.AssignedUserId ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}19", (object?)row.Web11 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}20", (object?)row.Web12 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}21", (object?)row.Web13 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}22", (object?)row.Web14 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}23", (object?)row.Web15 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}24", (object?)row.Web16 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}25", (object?)row.Web17 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}26", (object?)row.Web18 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}27", (object?)row.Web19 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}28", (object?)row.Web20 ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}29", row.RowStatus));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}30", (object?)row.Message ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}31", row.CreatedAt));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}32", row.UpdatedAt));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{p}33", (object?)row.AssignedUserId ?? DBNull.Value));
             }
 
             await _dbContext.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray(), cancellationToken);

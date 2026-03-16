@@ -21,18 +21,21 @@ public class WebSummaryService : IWebSummaryService
             .Select(x => new
             {
                 x.Web1, x.Web2, x.Web3, x.Web4, x.Web5,
-                x.Web6, x.Web7, x.Web8, x.Web9, x.Web10
+                x.Web6, x.Web7, x.Web8, x.Web9, x.Web10,
+                x.Web11, x.Web12, x.Web13, x.Web14, x.Web15,
+                x.Web16, x.Web17, x.Web18, x.Web19, x.Web20
             })
             .ToListAsync(cancellationToken);
 
         int total = records.Count;
 
         string?[][] webValues = records.Select(r => new string?[]
-            { r.Web1, r.Web2, r.Web3, r.Web4, r.Web5, r.Web6, r.Web7, r.Web8, r.Web9, r.Web10 })
+            { r.Web1, r.Web2, r.Web3, r.Web4, r.Web5, r.Web6, r.Web7, r.Web8, r.Web9, r.Web10,
+              r.Web11, r.Web12, r.Web13, r.Web14, r.Web15, r.Web16, r.Web17, r.Web18, r.Web19, r.Web20 })
             .ToArray();
 
         var columns = new List<WebColumnSummaryItem>();
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 20; i++)
         {
             int yes = 0, no = 0, nullCount = 0;
             foreach (var row in webValues)

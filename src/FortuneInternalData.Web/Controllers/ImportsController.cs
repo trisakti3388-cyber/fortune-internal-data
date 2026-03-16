@@ -317,7 +317,8 @@ public class ImportsController : Controller
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add("Template");
 
-        var headers = new[] { "phone_number", "web1", "web2", "web3", "web4", "web5", "web6", "web7", "web8", "web9", "web10" };
+        var headers = new[] { "phone_number", "web1", "web2", "web3", "web4", "web5", "web6", "web7", "web8", "web9", "web10",
+                              "web11", "web12", "web13", "web14", "web15", "web16", "web17", "web18", "web19", "web20" };
         for (int i = 0; i < headers.Length; i++)
             worksheet.Cell(1, i + 1).Value = headers[i];
 

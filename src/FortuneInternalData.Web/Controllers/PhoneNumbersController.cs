@@ -96,7 +96,7 @@ public class PhoneNumbersController : Controller
             ws.Cell(1, col++).Value = "assigned_to";
         if (isSuperadmin)
         {
-            for (int w = 1; w <= 10; w++)
+            for (int w = 1; w <= 20; w++)
                 ws.Cell(1, col++).Value = $"web{w}";
         }
 
@@ -131,6 +131,16 @@ public class PhoneNumbersController : Controller
                 ws.Cell(row, c++).Value = item.Web8 ?? string.Empty;
                 ws.Cell(row, c++).Value = item.Web9 ?? string.Empty;
                 ws.Cell(row, c++).Value = item.Web10 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web11 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web12 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web13 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web14 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web15 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web16 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web17 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web18 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web19 ?? string.Empty;
+                ws.Cell(row, c++).Value = item.Web20 ?? string.Empty;
             }
             row++;
         }
@@ -222,7 +232,9 @@ public class PhoneNumbersController : Controller
             AgentName = item.AgentName,
             Reference = item.Reference,
             Web1 = item.Web1, Web2 = item.Web2, Web3 = item.Web3, Web4 = item.Web4, Web5 = item.Web5,
-            Web6 = item.Web6, Web7 = item.Web7, Web8 = item.Web8, Web9 = item.Web9, Web10 = item.Web10
+            Web6 = item.Web6, Web7 = item.Web7, Web8 = item.Web8, Web9 = item.Web9, Web10 = item.Web10,
+            Web11 = item.Web11, Web12 = item.Web12, Web13 = item.Web13, Web14 = item.Web14, Web15 = item.Web15,
+            Web16 = item.Web16, Web17 = item.Web17, Web18 = item.Web18, Web19 = item.Web19, Web20 = item.Web20
         });
     }
 
@@ -254,6 +266,16 @@ public class PhoneNumbersController : Controller
             Web8 = isSuperadmin ? model.Web8 : null,
             Web9 = isSuperadmin ? model.Web9 : null,
             Web10 = isSuperadmin ? model.Web10 : null,
+            Web11 = isSuperadmin ? model.Web11 : null,
+            Web12 = isSuperadmin ? model.Web12 : null,
+            Web13 = isSuperadmin ? model.Web13 : null,
+            Web14 = isSuperadmin ? model.Web14 : null,
+            Web15 = isSuperadmin ? model.Web15 : null,
+            Web16 = isSuperadmin ? model.Web16 : null,
+            Web17 = isSuperadmin ? model.Web17 : null,
+            Web18 = isSuperadmin ? model.Web18 : null,
+            Web19 = isSuperadmin ? model.Web19 : null,
+            Web20 = isSuperadmin ? model.Web20 : null,
         }, userId, cancellationToken);
 
         TempData["SuccessMessage"] = "Phone number record updated successfully.";
@@ -296,7 +318,10 @@ public class PhoneNumbersController : Controller
             && (!isSuperadmin || (string.IsNullOrEmpty(model.Web1) && string.IsNullOrEmpty(model.Web2) && string.IsNullOrEmpty(model.Web3)
                 && string.IsNullOrEmpty(model.Web4) && string.IsNullOrEmpty(model.Web5) && string.IsNullOrEmpty(model.Web6)
                 && string.IsNullOrEmpty(model.Web7) && string.IsNullOrEmpty(model.Web8) && string.IsNullOrEmpty(model.Web9)
-                && string.IsNullOrEmpty(model.Web10))))
+                && string.IsNullOrEmpty(model.Web10) && string.IsNullOrEmpty(model.Web11) && string.IsNullOrEmpty(model.Web12)
+                && string.IsNullOrEmpty(model.Web13) && string.IsNullOrEmpty(model.Web14) && string.IsNullOrEmpty(model.Web15)
+                && string.IsNullOrEmpty(model.Web16) && string.IsNullOrEmpty(model.Web17) && string.IsNullOrEmpty(model.Web18)
+                && string.IsNullOrEmpty(model.Web19) && string.IsNullOrEmpty(model.Web20))))
         {
             TempData["ErrorMessage"] = "Please select at least one field to update.";
             return RedirectToAction(nameof(Index));
@@ -310,6 +335,10 @@ public class PhoneNumbersController : Controller
             isSuperadmin ? model.Web4 : null, isSuperadmin ? model.Web5 : null, isSuperadmin ? model.Web6 : null,
             isSuperadmin ? model.Web7 : null, isSuperadmin ? model.Web8 : null, isSuperadmin ? model.Web9 : null,
             isSuperadmin ? model.Web10 : null,
+            isSuperadmin ? model.Web11 : null, isSuperadmin ? model.Web12 : null, isSuperadmin ? model.Web13 : null,
+            isSuperadmin ? model.Web14 : null, isSuperadmin ? model.Web15 : null, isSuperadmin ? model.Web16 : null,
+            isSuperadmin ? model.Web17 : null, isSuperadmin ? model.Web18 : null, isSuperadmin ? model.Web19 : null,
+            isSuperadmin ? model.Web20 : null,
             isSuperadmin ? model.AssignedUserId : null,
             userId, cancellationToken);
 

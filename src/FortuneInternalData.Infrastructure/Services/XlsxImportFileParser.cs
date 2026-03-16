@@ -93,13 +93,24 @@ public class XlsxImportFileParser : IImportFileParser
             Web8 = cols.web8Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web8Col).GetString().Trim()) : null,
             Web9 = cols.web9Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web9Col).GetString().Trim()) : null,
             Web10 = cols.web10Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web10Col).GetString().Trim()) : null,
+            Web11 = cols.web11Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web11Col).GetString().Trim()) : null,
+            Web12 = cols.web12Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web12Col).GetString().Trim()) : null,
+            Web13 = cols.web13Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web13Col).GetString().Trim()) : null,
+            Web14 = cols.web14Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web14Col).GetString().Trim()) : null,
+            Web15 = cols.web15Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web15Col).GetString().Trim()) : null,
+            Web16 = cols.web16Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web16Col).GetString().Trim()) : null,
+            Web17 = cols.web17Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web17Col).GetString().Trim()) : null,
+            Web18 = cols.web18Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web18Col).GetString().Trim()) : null,
+            Web19 = cols.web19Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web19Col).GetString().Trim()) : null,
+            Web20 = cols.web20Col > 0 ? NullIfEmpty(wsRow.Cell(cols.web20Col).GetString().Trim()) : null,
         };
     }
 
     private static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
     private record ColumnMap(int phoneCol, int seqCol, int remarkCol, int whatsappStatusCol, int agentNameCol, int referenceCol, int statusCol,
-        int web1Col, int web2Col, int web3Col, int web4Col, int web5Col, int web6Col, int web7Col, int web8Col, int web9Col, int web10Col);
+        int web1Col, int web2Col, int web3Col, int web4Col, int web5Col, int web6Col, int web7Col, int web8Col, int web9Col, int web10Col,
+        int web11Col, int web12Col, int web13Col, int web14Col, int web15Col, int web16Col, int web17Col, int web18Col, int web19Col, int web20Col);
 
     private static ColumnMap GetColumns(IXLWorksheet worksheet)
     {
@@ -133,7 +144,11 @@ public class XlsxImportFileParser : IImportFileParser
             web1Col: Get("web1"), web2Col: Get("web2"), web3Col: Get("web3"),
             web4Col: Get("web4"), web5Col: Get("web5"), web6Col: Get("web6"),
             web7Col: Get("web7"), web8Col: Get("web8"), web9Col: Get("web9"),
-            web10Col: Get("web10")
+            web10Col: Get("web10"),
+            web11Col: Get("web11"), web12Col: Get("web12"), web13Col: Get("web13"),
+            web14Col: Get("web14"), web15Col: Get("web15"), web16Col: Get("web16"),
+            web17Col: Get("web17"), web18Col: Get("web18"), web19Col: Get("web19"),
+            web20Col: Get("web20")
         );
     }
 }
