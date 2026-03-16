@@ -247,30 +247,29 @@ WHERE batch_id = {0} AND row_status = 'new'";
             var sql = new StringBuilder(
                 "INSERT INTO import_batch_rows (batch_id, seq, raw_phone_number, normalized_phone_number, remark, whatsapp_status, agent_name, reference, row_status, message, created_at, updated_at) VALUES ");
 
-            const int colCount = 12;
-            var parameters = new List<object?>(batch.Count * colCount);
+            var parameters = new List<MySqlConnector.MySqlParameter>();
 
             for (int j = 0; j < batch.Count; j++)
             {
                 var row = batch[j];
-                var p = j * colCount;
+                var prefix = $"@p{j}_";
                 if (j > 0) sql.Append(',');
-                sql.Append($"({{{p}}},{{{p + 1}}},{{{p + 2}}},{{{p + 3}}},{{{p + 4}}},{{{p + 5}}},{{{p + 6}}},{{{p + 7}}},{{{p + 8}}},{{{p + 9}}},{{{p + 10}}},{{{p + 11}}})");
-                parameters.Add(row.BatchId);
-                parameters.Add((object?)row.Seq ?? DBNull.Value);
-                parameters.Add((object?)row.RawPhoneNumber ?? DBNull.Value);
-                parameters.Add((object?)row.NormalizedPhoneNumber ?? DBNull.Value);
-                parameters.Add((object?)row.Remark ?? DBNull.Value);
-                parameters.Add((object?)row.WhatsappStatus ?? DBNull.Value);
-                parameters.Add((object?)row.AgentName ?? DBNull.Value);
-                parameters.Add((object?)row.Reference ?? DBNull.Value);
-                parameters.Add(row.RowStatus);
-                parameters.Add((object?)row.Message ?? DBNull.Value);
-                parameters.Add(row.CreatedAt);
-                parameters.Add(row.UpdatedAt);
+                sql.Append($"({prefix}0,{prefix}1,{prefix}2,{prefix}3,{prefix}4,{prefix}5,{prefix}6,{prefix}7,{prefix}8,{prefix}9,{prefix}10,{prefix}11)");
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}0", row.BatchId));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}1", (object?)row.Seq ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}2", (object?)row.RawPhoneNumber ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}3", (object?)row.NormalizedPhoneNumber ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}4", (object?)row.Remark ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}5", (object?)row.WhatsappStatus ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}6", (object?)row.AgentName ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}7", (object?)row.Reference ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}8", row.RowStatus));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}9", (object?)row.Message ?? DBNull.Value));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}10", row.CreatedAt));
+                parameters.Add(new MySqlConnector.MySqlParameter($"{prefix}11", row.UpdatedAt));
             }
 
-            await _dbContext.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray()!, cancellationToken);
+            await _dbContext.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray(), cancellationToken);
         }
     }
 }
