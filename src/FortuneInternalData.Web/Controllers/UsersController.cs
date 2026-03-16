@@ -5,7 +5,9 @@ using FortuneInternalData.Domain.Constants;
 using FortuneInternalData.Web.Security;
 using FortuneInternalData.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FortuneInternalData.Web.Controllers;
 
@@ -14,11 +16,18 @@ public class UsersController : Controller
 {
     private readonly IUserService _userService;
     private readonly IUserQueryService _userQueryService;
+    private readonly RoleManager<IdentityRole> _roleManager;
 
-    public UsersController(IUserService userService, IUserQueryService userQueryService)
+    public UsersController(IUserService userService, IUserQueryService userQueryService, RoleManager<IdentityRole> roleManager)
     {
         _userService = userService;
         _userQueryService = userQueryService;
+        _roleManager = roleManager;
+    }
+
+    private async Task<string[]> GetAllRolesAsync()
+    {
+        return await _roleManager.Roles.OrderBy(r => r.Name).Select(r => r.Name!).ToArrayAsync();
     }
 
     [HttpGet]
@@ -29,12 +38,14 @@ public class UsersController : Controller
             Users = await _userQueryService.GetUsersAsync(cancellationToken)
         };
 
+        ViewBag.AllRoles = await GetAllRolesAsync();
         return View(model);
     }
 
     [HttpGet]
-    public IActionResult Create()
+    public async Task<IActionResult> Create()
     {
+        ViewBag.AllRoles = await GetAllRolesAsync();
         return View(new CreateUserViewModel());
     }
 
@@ -43,11 +54,16 @@ public class UsersController : Controller
     public async Task<IActionResult> Create(CreateUserViewModel model, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
+        {
+            ViewBag.AllRoles = await GetAllRolesAsync();
             return View(model);
+        }
 
-        if (!Roles.All.Contains(model.Role))
+        var allRoles = await GetAllRolesAsync();
+        if (!allRoles.Contains(model.Role))
         {
             ModelState.AddModelError(nameof(model.Role), "Invalid role selected.");
+            ViewBag.AllRoles = allRoles;
             return View(model);
         }
 
@@ -63,6 +79,7 @@ public class UsersController : Controller
         {
             foreach (var error in errors)
                 ModelState.AddModelError(string.Empty, error);
+            ViewBag.AllRoles = allRoles;
             return View(model);
         }
 
@@ -108,7 +125,8 @@ public class UsersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChangeRole(ChangeRoleViewModel model, CancellationToken cancellationToken)
     {
-        if (!Roles.All.Contains(model.NewRole))
+        var allRoles = await GetAllRolesAsync();
+        if (!allRoles.Contains(model.NewRole))
         {
             TempData["ErrorMessage"] = "Invalid role selected.";
             return RedirectToAction(nameof(Index));

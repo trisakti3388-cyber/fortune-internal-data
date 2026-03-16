@@ -23,9 +23,9 @@ public class PhoneNumberRepository : IPhoneNumberRepository
     public Task<bool> ExistsAsync(string phoneNumber, CancellationToken cancellationToken = default)
         => _dbContext.PhoneNumbers.AnyAsync(x => x.PhoneNumber == phoneNumber, cancellationToken);
 
-    public async Task<IReadOnlyList<PhoneNumberRecord>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PhoneNumberRecord>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, string? reference, string? agentName, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var query = BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId);
+        var query = BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, reference, agentName, dateFrom, dateTo, assignedUserId);
 
         return await query
             .OrderByDescending(x => x.Id)
@@ -34,19 +34,19 @@ public class PhoneNumberRepository : IPhoneNumberRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task<int> CountAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, CancellationToken cancellationToken = default)
+    public Task<int> CountAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, string? reference, string? agentName, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, CancellationToken cancellationToken = default)
     {
-        return BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId).CountAsync(cancellationToken);
+        return BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, reference, agentName, dateFrom, dateTo, assignedUserId).CountAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<PhoneNumberRecord>> SearchAllAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PhoneNumberRecord>> SearchAllAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, string? reference, string? agentName, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, CancellationToken cancellationToken = default)
     {
-        return await BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId)
+        return await BuildFilterQuery(phoneNumber, status, whatsappStatus, remark, reference, agentName, dateFrom, dateTo, assignedUserId)
             .OrderByDescending(x => x.Id)
             .ToListAsync(cancellationToken);
     }
 
-    private IQueryable<PhoneNumberRecord> BuildFilterQuery(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId)
+    private IQueryable<PhoneNumberRecord> BuildFilterQuery(string? phoneNumber, string? status, string? whatsappStatus, string? remark, string? reference, string? agentName, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId)
     {
         var query = _dbContext.PhoneNumbers.AsNoTracking().AsQueryable();
 
@@ -61,6 +61,12 @@ public class PhoneNumberRepository : IPhoneNumberRepository
 
         if (!string.IsNullOrWhiteSpace(remark))
             query = query.Where(x => x.Remark != null && x.Remark.Contains(remark.Trim()));
+
+        if (!string.IsNullOrWhiteSpace(reference))
+            query = query.Where(x => x.Reference != null && x.Reference.Contains(reference.Trim()));
+
+        if (!string.IsNullOrWhiteSpace(agentName))
+            query = query.Where(x => x.AgentName != null && x.AgentName.Contains(agentName.Trim()));
 
         if (dateFrom.HasValue)
             query = query.Where(x => x.UploadDate >= dateFrom.Value);

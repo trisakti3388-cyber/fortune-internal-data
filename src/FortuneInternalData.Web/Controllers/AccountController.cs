@@ -102,6 +102,16 @@ public class AccountController : Controller
         if (userId == null)
             return RedirectToAction(nameof(Login));
 
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            return RedirectToAction(nameof(Login));
+
+        // If 2FA is already enabled, show the "already enabled" view
+        if (user.TwoFactorEnabled)
+        {
+            return View(new Setup2FaViewModel { IsAlreadyEnabled = true });
+        }
+
         var result = await _totpSetupService.GenerateSetupAsync(userId);
         return View(new Setup2FaViewModel
         {
@@ -141,6 +151,28 @@ public class AccountController : Controller
         }
 
         TempData["SuccessMessage"] = "Two-factor authentication has been enabled successfully.";
+        return RedirectToAction("Index", "Dashboard");
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Disable2Fa()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return RedirectToAction(nameof(Login));
+
+        var (success, errors) = await _userService.Reset2FaAsync(userId);
+        if (!success)
+        {
+            TempData["ErrorMessage"] = string.Join("; ", errors);
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Two-factor authentication has been disabled.";
+        }
+
         return RedirectToAction("Index", "Dashboard");
     }
 

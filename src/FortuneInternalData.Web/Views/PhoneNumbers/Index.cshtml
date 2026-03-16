@@ -11,6 +11,8 @@
     var isSuperadmin = User.IsInRole("Superadmin");
     var dateFromStr = Model.DateFrom.HasValue ? Model.DateFrom.Value.ToString("yyyy-MM-dd") : "";
     var dateToStr = Model.DateTo.HasValue ? Model.DateTo.Value.ToString("yyyy-MM-dd") : "";
+    var searchRef = Model.SearchReference ?? "";
+    var searchAgent = Model.SearchAgentName ?? "";
 
     var userRoleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
     var canExport = await PermissionService.HasExportPermissionAsync(userRoleClaim, "PhoneData");
@@ -73,6 +75,14 @@
             <div class="col-md-3">
                 <label class="form-label small">Remark</label>
                 <input name="SearchRemark" value="@Model.SearchRemark" class="form-control" placeholder="Search remark" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Reference</label>
+                <input name="SearchReference" value="@Model.SearchReference" class="form-control" placeholder="Search reference" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Agent Name</label>
+                <input name="SearchAgentName" value="@Model.SearchAgentName" class="form-control" placeholder="Search agent name" />
             </div>
             <div class="col-md-2">
                 <label class="form-label small">Date From</label>
@@ -244,25 +254,25 @@
                     @if (Model.Page > 1)
                     {
                         <li class="page-item">
-                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=1&PageSize=@Model.PageSize" title="First">&laquo;&laquo;</a>
+                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&SearchReference=@searchRef&SearchAgentName=@searchAgent&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=1&PageSize=@Model.PageSize" title="First">&laquo;&laquo;</a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=@(Model.Page - 1)&PageSize=@Model.PageSize">&laquo; Prev</a>
+                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&SearchReference=@searchRef&SearchAgentName=@searchAgent&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=@(Model.Page - 1)&PageSize=@Model.PageSize">&laquo; Prev</a>
                         </li>
                     }
                     @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(totalPages, Model.Page + 2); i++)
                     {
                         <li class="page-item @(i == Model.Page ? "active" : "")">
-                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=@i&PageSize=@Model.PageSize">@i</a>
+                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&SearchReference=@searchRef&SearchAgentName=@searchAgent&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=@i&PageSize=@Model.PageSize">@i</a>
                         </li>
                     }
                     @if (Model.Page < totalPages)
                     {
                         <li class="page-item">
-                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=@(Model.Page + 1)&PageSize=@Model.PageSize">Next &raquo;</a>
+                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&SearchReference=@searchRef&SearchAgentName=@searchAgent&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=@(Model.Page + 1)&PageSize=@Model.PageSize">Next &raquo;</a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=@totalPages&PageSize=@Model.PageSize" title="Last">&raquo;&raquo;</a>
+                            <a class="page-link" href="/PhoneNumbers?SearchPhoneNumber=@Model.SearchPhoneNumber&Status=@Model.Status&WhatsappStatus=@Model.WhatsappStatus&SearchRemark=@Model.SearchRemark&SearchReference=@searchRef&SearchAgentName=@searchAgent&DateFrom=@dateFromStr&DateTo=@dateToStr&Page=@totalPages&PageSize=@Model.PageSize" title="Last">&raquo;&raquo;</a>
                         </li>
                     }
                 </ul>
@@ -436,6 +446,7 @@
             var params = new URLSearchParams(new FormData(form));
             params.set('Page', page);
             window.location.href = '/PhoneNumbers?' + params.toString();
+            // Note: FormData from the search form already includes SearchReference and SearchAgentName
         }
 
         document.getElementById('goToPageInput')?.addEventListener('keydown', function(e) {

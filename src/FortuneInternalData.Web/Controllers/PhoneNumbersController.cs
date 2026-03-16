@@ -40,6 +40,8 @@ public class PhoneNumbersController : Controller
             filter.Status,
             filter.WhatsappStatus,
             filter.SearchRemark,
+            filter.SearchReference,
+            filter.SearchAgentName,
             filter.DateFrom,
             filter.DateTo,
             filterAssignedUserId,
@@ -70,6 +72,8 @@ public class PhoneNumbersController : Controller
             filter.Status,
             filter.WhatsappStatus,
             filter.SearchRemark,
+            filter.SearchReference,
+            filter.SearchAgentName,
             filter.DateFrom,
             filter.DateTo,
             filterAssignedUserId,
@@ -159,6 +163,8 @@ public class PhoneNumbersController : Controller
             filter.Status,
             filter.WhatsappStatus,
             filter.SearchRemark,
+            filter.SearchReference,
+            filter.SearchAgentName,
             filter.DateFrom,
             filter.DateTo,
             filterAssignedUserId,
@@ -315,7 +321,9 @@ public class PhoneNumbersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AssignToUser(List<ulong> selectedIds, string? assignedUserId, CancellationToken cancellationToken)
     {
-        if (!User.IsInRole(Roles.Superadmin))
+        var roleName = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+        var isSuperadminUser = User.IsInRole(Roles.Superadmin);
+        if (!isSuperadminUser && !await _permissionService.HasPermissionAsync(roleName, "PhoneAssign", requireEdit: true, cancellationToken))
             return Forbid();
 
         if (selectedIds == null || !selectedIds.Any())

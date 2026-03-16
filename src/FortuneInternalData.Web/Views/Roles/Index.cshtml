@@ -1,0 +1,102 @@
+@model IEnumerable<Microsoft.AspNetCore.Identity.IdentityRole>
+@using FortuneInternalData.Domain.Constants
+@{
+    ViewData["Title"] = "Role Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-badge"></i> Role Management</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card stat-card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> All Roles</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Role Name</th>
+                            <th>Type</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            foreach (var role in Model)
+                            {
+                                var isBuiltIn = Roles.All.Contains(role.Name);
+                                var isSuperadmin = role.Name == Roles.Superadmin;
+                                <tr>
+                                    <td>
+                                        <span class="fw-semibold">@role.Name</span>
+                                    </td>
+                                    <td>
+                                        @if (isBuiltIn)
+                                        {
+                                            <span class="badge bg-secondary">Built-in</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary">Custom</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!isSuperadmin)
+                                        {
+                                            <form method="post" asp-action="Delete" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="roleName" value="@role.Name" />
+                                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                        onclick="return confirm('Delete role \'@role.Name\'? Users with this role will lose their role assignment.')">
+                                                    <i class="bi bi-trash"></i> Delete
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Protected</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-center text-muted py-4">No roles found.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Create New Role</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="Create">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Role Name <span class="text-danger">*</span></label>
+                        <input type="text" name="roleName" class="form-control" placeholder="e.g. Viewer, Analyst" required maxlength="50" />
+                        <div class="form-text">Use a unique, descriptive name without spaces (e.g. SalesManager).</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-circle"></i> Create Role
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle"></i>
+            After creating a role, go to <a href="/Permissions" class="alert-link">Permissions</a> to configure what the role can access.
+        </div>
+    </div>
+</div>

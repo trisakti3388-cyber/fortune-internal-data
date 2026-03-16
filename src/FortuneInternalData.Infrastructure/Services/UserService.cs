@@ -75,9 +75,6 @@ public class UserService : IUserService
 
     public async Task<(bool Success, string[] Errors)> ChangeRoleAsync(string userId, string newRole, CancellationToken cancellationToken = default)
     {
-        if (!Roles.All.Contains(newRole))
-            return (false, new[] { "Invalid role." });
-
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
             return (false, new[] { "User not found." });

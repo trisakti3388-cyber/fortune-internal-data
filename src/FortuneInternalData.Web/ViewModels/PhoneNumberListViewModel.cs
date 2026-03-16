@@ -8,6 +8,8 @@ public class PhoneNumberListViewModel
     public string? Status { get; set; }
     public string? WhatsappStatus { get; set; }
     public string? SearchRemark { get; set; }
+    public string? SearchReference { get; set; }
+    public string? SearchAgentName { get; set; }
     public DateTime? DateFrom { get; set; }
     public DateTime? DateTo { get; set; }
     public int Page { get; set; } = 1;

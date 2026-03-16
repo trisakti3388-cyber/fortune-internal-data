@@ -15,7 +15,10 @@ public class PermissionAuthorizationFilter : IAsyncAuthorizationFilter
         ["PhoneNumbers"] = "PhoneData",
         ["Imports"] = "Imports",
         ["Users"] = "Users",
-        ["Permissions"] = "Users"
+        ["Permissions"] = "Users",
+        ["WebSummary"] = "WebData",
+        ["IpWhitelist"] = "IpWhitelist",
+        ["Roles"] = "Users"
     };
 
     public PermissionAuthorizationFilter(IPermissionService permissionService)

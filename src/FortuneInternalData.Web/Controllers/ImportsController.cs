@@ -258,6 +258,26 @@ public class ImportsController : Controller
     // ── Delete Import ────────────────────────────────────────────────────────
 
     [HttpGet]
+    public IActionResult DownloadDeleteTemplate()
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Template");
+
+        worksheet.Cell(1, 1).Value = "phone_number";
+        worksheet.Row(1).Style.Font.Bold = true;
+        worksheet.Row(1).Style.Fill.BackgroundColor = XLColor.LightBlue;
+        worksheet.Column(1).Width = 20;
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        return File(stream.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "delete_import_template.xlsx");
+    }
+
+    [HttpGet]
     public IActionResult CreateDelete()
     {
         return View(new UploadImportViewModel());
@@ -290,6 +310,31 @@ public class ImportsController : Controller
     }
 
     // ── Web Status Import ────────────────────────────────────────────────────
+
+    [HttpGet]
+    public IActionResult DownloadWebStatusTemplate()
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Template");
+
+        var headers = new[] { "phone_number", "web1", "web2", "web3", "web4", "web5", "web6", "web7", "web8", "web9", "web10" };
+        for (int i = 0; i < headers.Length; i++)
+            worksheet.Cell(1, i + 1).Value = headers[i];
+
+        var headerRow = worksheet.Row(1);
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
+
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        return File(stream.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "web_status_import_template.xlsx");
+    }
 
     [HttpGet]
     public IActionResult CreateWebStatus()

@@ -54,10 +54,10 @@ public class PhoneNumberService : IPhoneNumberService
         }
     }
 
-    public async Task<PagedResultDto<PhoneNumberListItemDto>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<PagedResultDto<PhoneNumberListItemDto>> SearchAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, string? reference, string? agentName, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var items = await _phoneNumberRepository.SearchAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId, page, pageSize, cancellationToken);
-        var totalCount = await _phoneNumberRepository.CountAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId, cancellationToken);
+        var items = await _phoneNumberRepository.SearchAsync(phoneNumber, status, whatsappStatus, remark, reference, agentName, dateFrom, dateTo, assignedUserId, page, pageSize, cancellationToken);
+        var totalCount = await _phoneNumberRepository.CountAsync(phoneNumber, status, whatsappStatus, remark, reference, agentName, dateFrom, dateTo, assignedUserId, cancellationToken);
 
         var dtos = items.Select(ToDto).ToList();
         await ResolveUserNamesAsync(dtos, cancellationToken);
@@ -71,9 +71,9 @@ public class PhoneNumberService : IPhoneNumberService
         };
     }
 
-    public async Task<IReadOnlyList<PhoneNumberListItemDto>> SearchAllAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PhoneNumberListItemDto>> SearchAllAsync(string? phoneNumber, string? status, string? whatsappStatus, string? remark, string? reference, string? agentName, DateTime? dateFrom, DateTime? dateTo, string? assignedUserId, CancellationToken cancellationToken = default)
     {
-        var items = await _phoneNumberRepository.SearchAllAsync(phoneNumber, status, whatsappStatus, remark, dateFrom, dateTo, assignedUserId, cancellationToken);
+        var items = await _phoneNumberRepository.SearchAllAsync(phoneNumber, status, whatsappStatus, remark, reference, agentName, dateFrom, dateTo, assignedUserId, cancellationToken);
         var dtos = items.Select(ToDto).ToList();
         await ResolveUserNamesAsync(dtos, cancellationToken);
         return dtos;
