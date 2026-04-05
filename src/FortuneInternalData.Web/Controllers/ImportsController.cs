@@ -140,7 +140,8 @@ public class ImportsController : Controller
         if (!await _permissionService.HasExportPermissionAsync(roleName, "Imports", cancellationToken))
             return Forbid();
 
-        var batch = await _importQueryService.GetBatchDetailAsync(id, 1, int.MaxValue, null, cancellationToken);
+        // Get batch info only (without loading rows)
+        var batch = await _importQueryService.GetBatchDetailAsync(id, 1, 1, null, cancellationToken);
         if (batch is null)
             return NotFound();
 
@@ -159,16 +160,31 @@ public class ImportsController : Controller
         headerRow.Style.Font.Bold = true;
         headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
 
+        // Stream rows in batches of 5000 to avoid loading everything into memory
+        int exportPage = 1;
+        const int exportPageSize = 5000;
         int row = 2;
-        foreach (var r in batch.Rows)
+        while (true)
         {
-            ws.Cell(row, 1).Value = r.Seq ?? string.Empty;
-            ws.Cell(row, 2).Value = r.RawPhoneNumber ?? string.Empty;
-            ws.Cell(row, 3).Value = r.NormalizedPhoneNumber ?? string.Empty;
-            ws.Cell(row, 4).Value = r.Remark ?? string.Empty;
-            ws.Cell(row, 5).Value = r.RowStatus;
-            ws.Cell(row, 6).Value = r.Message ?? string.Empty;
-            row++;
+            var pageBatch = await _importQueryService.GetBatchDetailAsync(id, exportPage, exportPageSize, null, cancellationToken);
+            if (pageBatch is null || !pageBatch.Rows.Any())
+                break;
+
+            foreach (var r in pageBatch.Rows)
+            {
+                ws.Cell(row, 1).Value = r.Seq ?? string.Empty;
+                ws.Cell(row, 2).Value = r.RawPhoneNumber ?? string.Empty;
+                ws.Cell(row, 3).Value = r.NormalizedPhoneNumber ?? string.Empty;
+                ws.Cell(row, 4).Value = r.Remark ?? string.Empty;
+                ws.Cell(row, 5).Value = r.RowStatus;
+                ws.Cell(row, 6).Value = r.Message ?? string.Empty;
+                row++;
+            }
+
+            if (pageBatch.Rows.Count < exportPageSize)
+                break;
+
+            exportPage++;
         }
 
         ws.Columns().AdjustToContents();

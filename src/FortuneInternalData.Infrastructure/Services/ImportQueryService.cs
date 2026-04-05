@@ -71,10 +71,16 @@ public class ImportQueryService : IImportQueryService
         if (!string.IsNullOrEmpty(statusFilter))
             query = query.Where(x => x.RowStatus == statusFilter);
 
-        var totalRowCount = await query.CountAsync(cancellationToken);
+        // Optimization: Use cached batch.TotalRows when no filter (avoids COUNT on millions of rows)
+        int totalRowCount;
+        if (string.IsNullOrEmpty(statusFilter)) {
+            totalRowCount = batch.TotalRows;
+        } else {
+            totalRowCount = await query.CountAsync(cancellationToken);
+        }
 
         page = Math.Max(1, page);
-        pageSize = pageSize is 50 or 100 or 500 or 1000 ? pageSize : 100;
+        pageSize = pageSize is 50 or 100 or 500 or 1000 or 5000 ? pageSize : 100;
 
         var rows = await query
             .OrderBy(x => x.Id)
